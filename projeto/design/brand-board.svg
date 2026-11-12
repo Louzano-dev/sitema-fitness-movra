@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1120" width="1440" height="1120" role="img" aria-labelledby="title desc">
+  <title id="title">MOVRA — proposta de identidade e design system</title>
+  <desc id="desc">Prancha estática com marca em verde profundo e lima, mensagem Cada treino, um próximo passo, paleta, tipografia e amostras de estados. Conceito para aprovação; não é uma interface funcional.</desc>
+  <defs>
+    <g id="mark" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round">
+      <path d="M14 60V32C14 20 23 14 34 14H42V40C42 52 51 60 64 60"/>
+      <path d="M30 66V42C30 30 39 24 50 24H66"/>
+    </g>
+  </defs>
+  <rect width="1440" height="1120" fill="#F3F3E9"/>
+  <rect width="1440" height="448" fill="#172C29"/>
+  <g font-family="Inter, system-ui, sans-serif">
+    <text x="64" y="46" font-size="12" letter-spacing="2" fill="#B9C7BE">IDENTIDADE EM MOVIMENTO</text>
+    <text x="1376" y="46" text-anchor="end" font-size="12" letter-spacing="1" fill="#B9C7BE">PROPOSTA 01 / NOV 2026</text>
+    <use href="#mark" x="54" y="78" width="80" height="80" color="#C9F078"/>
+    <text x="150" y="143" font-family="'Space Grotesk', system-ui, sans-serif" font-size="72" font-weight="600" letter-spacing="-3" fill="#F3F3E9">MOVRA</text>
+    <text x="64" y="257" font-family="'Space Grotesk', system-ui, sans-serif" font-size="57" font-weight="500" letter-spacing="-2" fill="#F3F3E9">Cada treino,</text>
+    <text x="64" y="323" font-family="'Space Grotesk', system-ui, sans-serif" font-size="57" font-weight="500" letter-spacing="-2" fill="#C9F078">um próximo passo.</text>
+    <text x="66" y="389" font-size="16" fill="#B9C7BE">Clareza para orientar. Continuidade para evoluir.</text>
+    <g transform="translate(1006 82) scale(3.6)" color="#C9F078"><use href="#mark"/></g>
+    <line x1="64" y1="488" x2="1376" y2="488" stroke="#D7DED2"/>
+    <text x="64" y="524" font-size="12" font-weight="600" letter-spacing="1.5" fill="#53675E">01 / PALETA COM PROPÓSITO</text>
+    <g transform="translate(64 549)">
+      <rect width="248" height="100" rx="6" fill="#172C29"/>
+      <text x="16" y="34" font-size="15" fill="#F3F3E9">Estrutura</text><text x="16" y="78" font-size="13" fill="#B9C7BE">#172C29</text>
+    </g>
+    <g transform="translate(330 549)">
+      <rect width="248" height="100" rx="6" fill="#C9F078"/>
+      <text x="16" y="34" font-size="15" fill="#172C29">Próximo passo</text><text x="16" y="78" font-size="13" fill="#172C29">#C9F078</text>
+    </g>
+    <g transform="translate(596 549)">
+      <rect width="248" height="100" rx="6" fill="#F3F3E9" stroke="#D7DED2"/>
+      <text x="16" y="34" font-size="15" fill="#101816">Respiro</text><text x="16" y="78" font-size="13" fill="#53675E">#F3F3E9 / canvas</text>
+    </g>
+    <g transform="translate(862 549)">
+      <rect width="248" height="100" rx="6" fill="#53675E"/>
+      <text x="16" y="34" font-size="15" fill="#FFFFFF">Leitura auxiliar</text><text x="16" y="78" font-size="13" fill="#FFFFFF">#53675E</text>
+    </g>
+    <g transform="translate(1128 549)">
+      <rect width="248" height="100" rx="6" fill="#101816"/>
+      <text x="16" y="34" font-size="15" fill="#F3F3E9">Precisão</text><text x="16" y="78" font-size="13" fill="#B9C7BE">#101816</text>
+    </g>
+    <line x1="64" y1="693" x2="1376" y2="693" stroke="#D7DED2"/>
+    <text x="64" y="729" font-size="12" font-weight="600" letter-spacing="1.5" fill="#53675E">02 / VOZ E HIERARQUIA</text>
+    <text x="64" y="797" font-family="'Space Grotesk', system-ui, sans-serif" font-size="42" font-weight="500" letter-spacing="-1.2" fill="#101816">Presença em cada etapa.</text>
+    <text x="66" y="835" font-size="16" fill="#53675E">Uma identidade serena, precisa e humana.</text>
+    <text x="66" y="868" font-size="13" fill="#53675E">Space Grotesk · títulos / Inter · interface e dados</text>
+    <line x1="852" y1="729" x2="852" y2="874" stroke="#D7DED2"/>
+    <text x="898" y="757" font-size="14" fill="#53675E">RITMO DE ESPAÇAMENTO</text>
+    <g fill="#172C29"><rect x="898" y="797" width="8" height="8"/><rect x="930" y="789" width="16" height="16"/><rect x="970" y="781" width="24" height="24"/><rect x="1018" y="773" width="32" height="32"/><rect x="1074" y="757" width="48" height="48"/><rect x="1146" y="741" width="64" height="64"/></g>
+    <g font-size="12" fill="#53675E"><text x="898" y="835">8</text><text x="930" y="835">16</text><text x="970" y="835">24</text><text x="1018" y="835">32</text><text x="1074" y="835">48</text><text x="1146" y="835">64 px</text></g>
+    <line x1="64" y1="912" x2="1376" y2="912" stroke="#D7DED2"/>
+    <text x="64" y="948" font-size="12" font-weight="600" letter-spacing="1.5" fill="#53675E">03 / AMOSTRAS ESTÁTICAS DE ESTADO</text>
+    <rect x="64" y="975" width="206" height="48" rx="6" fill="#172C29"/>
+    <text x="167" y="1005" text-anchor="middle" font-size="15" font-weight="600" fill="#F3F3E9">Ação principal</text>
+    <rect x="294" y="970" width="216" height="58" rx="10" fill="none" stroke="#172C29" stroke-width="2"/>
+    <rect x="299" y="975" width="206" height="48" rx="6" fill="#172C29"/>
+    <text x="402" y="1005" text-anchor="middle" font-size="15" font-weight="600" fill="#F3F3E9">Foco visível</text>
+    <rect x="534" y="975" width="206" height="48" rx="6" fill="#E8EBE1"/>
+    <text x="637" y="1005" text-anchor="middle" font-size="15" font-weight="500" fill="#53675E">Indisponível</text>
+    <rect x="780" y="975" width="258" height="48" rx="6" fill="#E6F1E9"/>
+    <path d="m797 999 5 5 10-12" fill="none" stroke="#236349" stroke-width="2"/>
+    <text x="822" y="1005" font-size="15" fill="#236349">Registro demonstrativo</text>
+    <text x="64" y="1090" font-size="12" fill="#53675E">Conceito para aprovação · nome sem validação de disponibilidade · fontes dependem da instalação local</text>
+    <text x="1376" y="1090" text-anchor="end" font-size="12" fill="#53675E">MOVRA / DESIGN SYSTEM v0.1</text>
+  </g>
+</svg>

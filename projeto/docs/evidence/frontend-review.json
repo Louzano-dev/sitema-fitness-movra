@@ -1,0 +1,25 @@
+{
+  "contract": "Preservar fontes React/Next e index.html independente. Identidade MOVRA, vídeo real fornecido, sete capítulos GSAP, Personal/Aluno/Admin navegáveis. Somente mocks em memória; sem backend, senha real, pagamentos ou IA.",
+  "targetViewports": ["360x900", "768x900", "1280x900", "1920x900"],
+  "accessibility": { "status": "pass", "evidence": "Playwright cobre teclado, foco do formulário, próximo exercício e diálogos; axe A/AA sem violações na entrada, execução e páginas principais dos três ambientes. Redução de movimento elimina vídeo e pin. Não constitui certificação integral." },
+  "responsive": { "status": "pass", "evidence": "layout-observations.json: zero overflow, exceções ou requisições HTTP nas quatro larguras. Entrada, criação e treino inspecionados nas capturas. Botão de entrada visível em 360x900; leitura natural para ações secundárias." },
+  "contentStates": {
+    "loading": { "status": "not-applicable", "reason": "Os dados são mocks síncronos em memória; não há carregamento remoto para capturar. Ações locais expõem busy/disabled, sem simular latência de servidor." },
+    "empty": { "status": "pass", "evidence": "review-experience.mjs filtra alunos sem resultado, verifica o título vazio e recupera a lista pelo botão Limpar filtros. Captura empty-filter.png." },
+    "error": { "status": "pass", "evidence": "Teste de treino incompleto exige alert antes de concluir; falha de mídia mantém poster/formulário e entrada utilizável. Cadastro/recuperação explicitam ausência de envio de e-mail." },
+    "partial": { "status": "pass", "evidence": "Perfil de Felipe Rocha permanece navegável sem os registros completos dos demais alunos; captura partial-student.png e componentes de vazio preservados." },
+    "success": { "status": "pass", "evidence": "Testes confirmam feedback de atribuição, duplicação da ficha, conclusão da sessão e acréscimo no histórico, sem persistência real." },
+    "permission": { "status": "pass", "evidence": "Teste de rota interna sem sessão retorna à entrada. A interface identifica demonstração e não apresenta guardas de navegação como autorização ou segurança de produção." }
+  },
+  "renderedEvidence": [
+    { "viewport": "360x900", "artifact": "entry-360.png", "observation": "Composição vertical, vídeo/poster no topo, controles separados e entrada visível. Campos 16px e seleção de perfil legíveis." },
+    { "viewport": "768x900", "artifact": "entry-768.png", "observation": "Título ajustado ao tablet e formulário separado; sem pin nem overflow horizontal." },
+    { "viewport": "1280x900", "artifact": "entry-1280.png", "observation": "Cena independente à esquerda, painel completo à direita, headline em três linhas e controle de pausa sem sobreposição." },
+    { "viewport": "1920x900", "artifact": "entry-1920.png", "observation": "Largura editorial contida, formulário com 450px e texto sobre a cena; tipografia preserva hierarquia." },
+    { "viewport": "360x900", "artifact": "creation-360.png", "observation": "Etapas de criação empilhadas; seleção e CTA utilizáveis sem animação horizontal." },
+    { "viewport": "1920x900", "artifact": "creation-1920.png", "observation": "Pin curto contém fluxo de prescrição sem interceptar o scroll natural." },
+    { "viewport": "360x900", "artifact": "workout-360.png", "observation": "Prescrição, última carga com data, entradas por série e navegação inferior coexistem sem overflow." },
+    { "viewport": "768x900", "artifact": "workout-768.png", "observation": "Exercícios e cronômetro em colunas, com navegação inferior contextual." },
+    { "viewport": "1920x900", "artifact": "workout-1920.png", "observation": "Navegação lateral, sequência dos exercícios e resumo persistem no ambiente do aluno." }
+  ]
+}

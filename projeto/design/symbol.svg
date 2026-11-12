@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-labelledby="title desc">
+  <title id="title">MOVRA — conceito de símbolo</title>
+  <desc id="desc">Dois percursos curvos em verde profundo, deslocados, representam orientação e prática em continuidade. Desenho exploratório.</desc>
+  <g fill="none" stroke="#172C29" stroke-width="8" stroke-linecap="round">
+    <path d="M14 60V32C14 20 23 14 34 14H42V40C42 52 51 60 64 60"/>
+    <path d="M30 66V42C30 30 39 24 50 24H66"/>
+  </g>
+</svg>

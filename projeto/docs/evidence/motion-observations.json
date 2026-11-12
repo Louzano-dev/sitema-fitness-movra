@@ -1,0 +1,35 @@
+{
+  "browser": "157.0.8103.52",
+  "viewport": "1280x900",
+  "scope": "Headless Chrome desktop, arquivo local offline; amostra indicativa, sem garantia para dispositivos físicos.",
+  "frames": {
+    "sampleFrames": 179,
+    "medianMs": 6.9,
+    "p95Ms": 7.2,
+    "framesAbove50Ms": 0,
+    "longTasks": []
+  },
+  "lifecycle": [
+    {
+      "cycle": 1,
+      "entryPins": 1,
+      "entryVideos": 1,
+      "appPins": 0,
+      "appVideos": 0
+    },
+    {
+      "cycle": 2,
+      "entryPins": 1,
+      "entryVideos": 1,
+      "appPins": 0,
+      "appVideos": 0
+    },
+    {
+      "cycle": 3,
+      "entryPins": 1,
+      "entryVideos": 1,
+      "appPins": 0,
+      "appVideos": 0
+    }
+  ]
+}
