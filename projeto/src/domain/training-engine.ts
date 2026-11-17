@@ -6,6 +6,7 @@ import {
   type Program,
 } from './experience';
 import { EXERCISES } from './exercise-catalog';
+import { CARDIO_CATALOG, makeCardio } from './cardio';
 import { normalize } from './selectors';
 export const RULE_VERSION = 'movra-rules/1.0';
 export function reviewReasons(input: Questionnaire): string[] {
@@ -21,7 +22,7 @@ export function reviewReasons(input: Questionnaire): string[] {
   if (
     input.specialContext ||
     /dor|lesao|gravidez|gesta|clinica|cirurgia|cardiac|desmaio|limitacao|hipertens|diabet|asma|epilep|cancer|oncolog|artrit|tendinit|fratur|osteopor/.test(
-      normalize(input.notes),
+      normalize(input.notes + ' ' + (input.cardio?.notes ?? '')),
     )
   )
     reasons.push('Contexto individual exige avaliação profissional antes de elaborar a ficha.');
@@ -40,6 +41,27 @@ export type Proposal =
 export function generateProgram(raw: Questionnaire, offset = 0): Proposal {
   const q = questionnaireSchema.parse(raw);
   const reasons = reviewReasons(q);
+  const cq = q.cardio;
+  if (cq?.include === 'Sim' && (cq.frequency > q.frequency || cq.minutes > q.minutes - 8))
+    reasons.push(
+      'Cardio excede os dias ou o tempo disponível da sessão. Revise a distribuição e recuperação.',
+    );
+  const modality = cq?.modalities
+    .map((id) => CARDIO_CATALOG.find((m) => m.id === id))
+    .find(
+      (m) =>
+        m &&
+        (m.id === 'cardio-2' ||
+          m.id === 'cardio-3' ||
+          m.id === 'cardio-11' ||
+          m.id === 'cardio-13' ||
+          ((m.id === 'cardio-0' || m.id === 'cardio-1') && q.equipment.includes('Esteira')) ||
+          (m.id === 'cardio-4' && q.equipment.includes('Bicicleta ergométrica'))),
+    );
+  if (cq?.include === 'Sim' && !modality)
+    reasons.push(
+      'Selecione uma modalidade compatível com os equipamentos. Outras modalidades exigem organização manual.',
+    );
   if (reasons.length) return { kind: 'review', reasons };
   const pool = EXERCISES.filter(
     (e) =>
@@ -95,9 +117,33 @@ export function generateProgram(raw: Questionnaire, offset = 0): Proposal {
       const patterns = [...new Set(ordered.map((e) => e.pattern))];
       const selected = patterns
         .map((pattern) => ordered.find((e) => e.pattern === pattern)!)
-        .slice(0, Math.max(1, Math.min(5, Math.floor(q.minutes / 8))));
+        .slice(
+          0,
+          Math.max(
+            1,
+            Math.min(
+              5,
+              Math.floor(
+                (q.minutes - (cq?.include === 'Sim' && index < cq.frequency ? cq.minutes : 0)) / 8,
+              ),
+            ),
+          ),
+        );
       return {
         id: `day-${index}`,
+        cardio:
+          cq?.include === 'Sim' && modality && index < cq.frequency
+            ? [
+                {
+                  ...makeCardio(modality),
+                  id: `cardio-proposal-${index}`,
+                  minutes: cq.minutes,
+                  frequency: cq.frequency,
+                  notes: `Objetivo: ${cq.goal}. Experiência: ${cq.experience}. ${cq.notes} Revisar distribuição e recuperação.`,
+                  intensity: 'A definir após avaliação profissional; sem intensidade automática',
+                },
+              ]
+            : undefined,
         name: `${String.fromCharCode(65 + index)} · ${q.split}`,
         weekday,
         instructions: q.notes,

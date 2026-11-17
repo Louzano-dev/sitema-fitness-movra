@@ -90,6 +90,7 @@ export class MockRepository implements MovraRepository {
       programId: program.id,
       versionId: program.approvedVersion,
       weekday: day.weekday,
+      cardio: structuredClone(day.cardio ?? []),
       exercises: day.exercises.map((row) => {
         const original = exercises.find((e) => e.id === row.exerciseId);
         if (!original) throw new Error('Exercício não encontrado.');

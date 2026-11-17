@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { CardioLibrary } from '../cardio';
 import { Activity, Search } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
 import { EXERCISES } from '@/domain/exercise-catalog';
@@ -43,6 +44,7 @@ export function ExercisesPage() {
         title="O repertório de cada movimento."
         description="Consulte instruções e equipamentos para compor suas prescrições. Catálogo demonstrativo, sem vídeos ou prescrição automática."
       />
+      <CardioLibrary/>
       <div className="toolbar mb-6 rounded-xl border bg-white">
         <div className="search-field">
           <label className="sr-only" htmlFor="exercise-query">

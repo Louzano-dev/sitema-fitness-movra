@@ -1,4 +1,12 @@
-# MOVRA 3.0
+# MOVRA 4.1
+
+Fuel individual: o Personal registra sua própria alimentação em uma identidade separada e não consulta diários, calorias ou nutrientes dos alunos. A opção de compartilhar foi removida; permissões antigas de compartilhamento são ignoradas pelo serviço. Cada aluno continua com seu próprio diário. Os valores representam energia/nutrientes ingeridos, não gasto com exercícios. Esta política substitui os fluxos de compartilhamento descritos nas entregas históricas. Continua sendo demonstração local, sem segurança de produção ou perfil de nutricionista implementado.
+
+Interface refinada com sidebar compacta/expandida, indicador animado, temas claro/escuro persistentes, transições de navegação e reordenação GSAP Flip. Veja [Premium Motion](docs/premium-motion-release.md) para análise da referência, testes e limites.
+
+Fuel: as estimativas nutricionais são sempre exibidas em todos os perfis, sem controle de mostrar/ocultar. A antiga preferência salva não altera a exibição. Essa mudança substitui a política de visualização opcional descrita nas entregas históricas; o compartilhamento com o Personal continua independente.
+
+Novo: [cardio integrado ao Studio](docs/cardio-4.1-release.md), com biblioteca, editor de intervalos, aprovação/atribuição, cronômetro e histórico por aluno. O HTML independente continua sendo a forma direta de uso.
 
 Organização atual: abra `../index.html` diretamente. Todos os fontes, recursos e ferramentas ficam nesta pasta `projeto`. Não é necessário iniciar servidor. O comando opcional `npm run build:portable`, executado aqui, atualiza o HTML na raiz. Os imports entre fontes e os caminhos de mídia dentro do projeto mantêm sua estrutura relativa.
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { cardioSchema, cardioRecordSchema, modalitySchema, cardioQuestionSchema } from './cardio';
 
 export const WEEKDAYS = [
   'Segunda',
@@ -49,6 +50,7 @@ export const questionnaireSchema = z
     notes: z.string().max(1000),
     specialContext: z.boolean(),
     split: z.enum(['Full body', 'A/B', 'A/B/C', 'Superior/inferior', 'Padrões de movimento']),
+    cardio: cardioQuestionSchema.optional(),
   })
   .refine((q) => new Set(q.days).size === q.frequency, {
     message: 'Selecione dias distintos em quantidade igual à frequência.',
@@ -77,6 +79,7 @@ export const daySchema = z.object({
   weekday: z.string(),
   instructions: z.string().max(1000),
   exercises: z.array(studioExerciseSchema).max(20),
+  cardio: z.array(cardioSchema).max(10).optional(),
 });
 export type TrainingDay = z.infer<typeof daySchema>;
 export const programSchema = z.object({
@@ -144,6 +147,8 @@ export const mealSchema = z.object({
 });
 export type Meal = z.infer<typeof mealSchema>;
 export const experienceSchema = z.object({
+  cardioRecords: z.array(cardioRecordSchema).optional(),
+  cardioModalities: z.array(modalitySchema).optional(),
   programs: z.array(programSchema),
   versions: z.array(programSchema),
   foods: z.array(foodSchema),

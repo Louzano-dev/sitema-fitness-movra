@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-17",
+  "artifact": "index.html",
+  "bytes": 7508929,
+  "sha256": "066261756987129f8b7033b9b5b93e2ce84860b3db4e7cc9b3e8bd722b772e98",
+  "build": "pass",
+  "lint": "pass",
+  "typecheck": "pass",
+  "unitTestsPassed": 52,
+  "initialFullOfflineRun": {
+    "total": 40,
+    "passed": 36,
+    "failed": 4
+  },
+  "revalidation": {
+    "responsiveEnvironmentsPassed": 3,
+    "cardioFlowsPassed": 2,
+    "motionFlowsPassed": 3
+  },
+  "scope": "HTML copiado isoladamente, Chrome offline, sem servidor",
+  "screenshots": "390/768/1280/1920, claro e escuro",
+  "referenceAnalysis": "Amostragem temporal do vídeo fornecido, 0 a 14 s e detalhe 4 a 6 s",
+  "limitations": [
+    "Sem aparelhos físicos ou auditoria manual completa",
+    "View Transitions com fallback",
+    "Suíte E2E Next.js não repetida"
+  ]
+}

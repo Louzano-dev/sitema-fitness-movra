@@ -28,6 +28,7 @@ export interface Prescription {
   rest: number;
 }
 export interface Workout {
+  cardio?: import('./cardio').Cardio[];
   programId?: string;
   versionId?: string;
   weekday?: string;

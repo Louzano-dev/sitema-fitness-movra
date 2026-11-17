@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { CardioHistory } from '../cardio';
 import Link from 'next/link';
 import { ArrowLeft, Pencil, Plus } from 'lucide-react';
 import { useDemo } from '@/components/providers';
@@ -120,6 +121,7 @@ export function StudentDetail({ id }: { id: string }) {
           </Button>
         </div>
         <WorkoutCards workouts={workouts} />
+        <CardioHistory studentId={id} personal/>
       </div>
       <div className="two-columns section-gap">
         <Panel

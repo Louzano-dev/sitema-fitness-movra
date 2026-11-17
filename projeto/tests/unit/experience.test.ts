@@ -17,6 +17,7 @@ import {
   saveFood,
   saveMeal,
   sharedMeals,
+  PERSONAL_FUEL_ID,
   recipeFood,
 } from '@/services/experience-service';
 import { STORAGE_KEY } from '@/services/local-storage';
@@ -186,6 +187,26 @@ describe('Studio · regras e versões', () => {
   });
 });
 describe('Fuel · quantidades, origem e privacidade', () => {
+  it('Personal tem diário próprio e não recebe dados de alunos por consentimento antigo', () => {
+    const repository = new MockRepository();
+    saveMeal(
+      repository,
+      {
+        id: '',
+        studentId: PERSONAL_FUEL_ID,
+        date: '2026-11-12',
+        name: 'Lanche',
+        note: '',
+        favorite: false,
+        items: [{ id: 'item', foodId: rice.id, quantity: 100, unit: 'g', grams: 100 }],
+      },
+      PERSONAL_FUEL_ID,
+    );
+    expect(sharedMeals(repository.getSnapshot(), 'personal', PERSONAL_FUEL_ID)).toHaveLength(1);
+    expect(sharedMeals(repository.getSnapshot(), 'aluno', 'ana')).toEqual([]);
+    expect(sharedMeals(repository.getSnapshot(), 'aluno', PERSONAL_FUEL_ID)).toEqual([]);
+    expect(sharedMeals(repository.getSnapshot(), 'admin', PERSONAL_FUEL_ID)).toEqual([]);
+  });
   it('usa arroz USDA verificado: 150 g equivalem a 195 kcal', () => {
     expect(rice.per100g.kcal).toBe(130);
     expect(foodNutrients(rice, 150).kcal).toBe(195);
@@ -265,7 +286,7 @@ describe('Fuel · quantidades, origem e privacidade', () => {
       ...state,
       preferences: { ana: { showNumbers: true, share: true } },
     }));
-    expect(sharedMeals(repository.getSnapshot(), 'personal', 'ana')).toHaveLength(1);
+    expect(sharedMeals(repository.getSnapshot(), 'personal', 'ana')).toEqual([]);
     expect(sharedMeals(repository.getSnapshot(), 'personal', 'bruno')).toEqual([]);
     expect(sharedMeals(repository.getSnapshot(), 'admin', 'ana')).toEqual([]);
     repository.updateExperience((state) => ({

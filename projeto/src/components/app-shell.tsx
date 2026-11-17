@@ -2,6 +2,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useDemoSession } from './demo-session';
 import { PageMotion } from './motion';
+import { usePremiumShell } from './premium-motion';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -17,6 +18,10 @@ import {
   HelpCircle,
   LayoutDashboard,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Moon,
+  Sun,
   Settings2,
   ShieldCheck,
   Users,
@@ -103,6 +108,15 @@ function AccountMenu({
 export function AppShell({ role, children }: { role: Environment; children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
+  const {
+    sidebar: sidebarRef,
+    compact,
+    setCompact,
+    theme,
+    setTheme,
+    ready,
+    onNavigate,
+  } = usePremiumShell(path, (href) => router.push(href));
   const { session, leave, switchProfile } = useDemoSession();
   useEffect(() => {
     if (!session || session.role !== role) router.replace('/entrar');
@@ -129,12 +143,28 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
   };
   const links = (
     <nav className="sidebar-nav" aria-label={`Navegação · ${labels[role]}`}>
+      <span className="sidebar-active-track" aria-hidden="true" />
       {items.map(({ href, label, icon: Icon }) => {
         const active = path === href || (href !== `/${role}` && path.startsWith(`${href}/`));
         return (
           <Link
             key={href}
             href={href}
+            aria-label={label}
+            data-tooltip={label}
+            title={label}
+            onFocus={(e) =>
+              e.currentTarget.style.setProperty(
+                '--tooltip-y',
+                `${e.currentTarget.getBoundingClientRect().top}px`,
+              )
+            }
+            onMouseEnter={(e) =>
+              e.currentTarget.style.setProperty(
+                '--tooltip-y',
+                `${e.currentTarget.getBoundingClientRect().top}px`,
+              )
+            }
             aria-current={active ? 'page' : undefined}
             className={cn('sidebar-link', active && 'active')}
             onClick={() => setMenuOpen(false)}
@@ -203,7 +233,15 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
       </div>
     );
   return (
-    <div className={cn('app-shell', `environment-${role}`)}>
+    <div
+      className={cn(
+        'app-shell',
+        `environment-${role}`,
+        compact && 'sidebar-compact',
+        ready && 'appearance-ready',
+      )}
+      onClickCapture={onNavigate}
+    >
       <a
         className="skip-link"
         href="#main-content"
@@ -216,9 +254,30 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
       >
         Pular para o conteúdo
       </a>
-      <aside className="sidebar desktop-sidebar">{sidebar}</aside>
+      <aside ref={sidebarRef} className="sidebar desktop-sidebar">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="sidebar-collapse"
+          aria-label={compact ? 'Expandir navegação' : 'Recolher navegação'}
+          aria-expanded={!compact}
+          onClick={() => setCompact(!compact)}
+        >
+          {compact ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
+        </Button>
+        {sidebar}
+      </aside>
       <div className="workspace">
         <header className="topbar">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="theme-switch"
+            aria-label={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          >
+            {theme === 'light' ? <Moon size={19} /> : <Sun size={19} />}
+          </Button>
           <div className="breadcrumb">
             <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
               <DialogTrigger asChild>

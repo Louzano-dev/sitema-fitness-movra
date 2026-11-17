@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-17",
+  "artifact": "index.html independente",
+  "bytes": 7459163,
+  "sha256": "c732fa9e6d0477f7064f0d3dce8f6fbf79a382281af80b3539b65cb5cdfdb6dd",
+  "build": "pass",
+  "typecheck": "pass",
+  "lint": "pass",
+  "unit": {
+    "tests": 52,
+    "status": "pass"
+  },
+  "portableE2E": {
+    "tests": 37,
+    "status": "pass",
+    "minutes": 6.1,
+    "offline": true,
+    "isolatedFile": true,
+    "server": false
+  },
+  "cardioViewports": [
+    390,
+    1280
+  ],
+  "motion": {
+    "mobile": "reduce",
+    "desktop": "no-preference"
+  },
+  "timerProof": {
+    "runningSeconds": 3,
+    "pausedSeconds": 5,
+    "recordedSeconds": 3
+  },
+  "limitations": [
+    "Chrome em viewports simulados; sem aparelhos físicos",
+    "Relógio em andamento não persiste; registros salvos persistem",
+    "Prescrições demonstrativas exigem revisão profissional"
+  ]
+}

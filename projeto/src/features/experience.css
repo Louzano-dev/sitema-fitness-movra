@@ -1,4 +1,87 @@
 /* MOVRA Studio & Fuel share the operational design system. */
+.cardio-card,
+.cardio-block {
+  padding: 20px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+}
+.cardio-dialog {
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+.cardio-clock {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 8vw, 72px);
+  font-variant-numeric: tabular-nums;
+  padding: 20px;
+  background: #172c29;
+  color: #c9f078;
+  border-radius: 12px;
+  margin: 16px 0;
+}
+.cardio-timeline {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.cardio-timeline span {
+  min-width: 90px;
+  padding: 10px;
+  background: #e5ecd9;
+  color: #172c29;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.cardio-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 24px 0;
+}
+.cardio-metrics > span {
+  flex: 1 1 140px;
+  font-size: 12px;
+}
+.cardio-metrics strong {
+  display: block;
+  font-size: 28px;
+  color: #172c29;
+}
+.cardio-library {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+}
+.cardio-library details {
+  border-bottom: 1px solid var(--border);
+  padding: 8px;
+}
+.cardio-trend {
+  padding-left: 22px;
+  line-height: 1.8;
+}
+.cardio-runner .form-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 760px) {
+  .cardio-dialog input,
+  .cardio-dialog select,
+  .cardio-dialog textarea,
+  .cardio-runner input {
+    font-size: 16px;
+  }
+  .cardio-block {
+    padding: 12px;
+  }
+  .cardio-runner .form-actions > button {
+    flex: 1 1 45%;
+    white-space: normal;
+    min-height: 44px;
+  }
+}
 .module-hero {
   display: flex;
   align-items: center;

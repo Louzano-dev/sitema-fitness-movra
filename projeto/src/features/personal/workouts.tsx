@@ -48,6 +48,7 @@ export function WorkoutCards({
             </div>
             <h2>{w.title}</h2>
             {w.weekday && <p className="eyebrow">{w.weekday} · versão revisada</p>}
+            {!!w.cardio?.length && <p>{w.cardio.length} sessões de cardio · {w.cardio.map(c=>c.modality.name).join(', ')}</p>}
             <p>
               {studentView
                 ? 'Uma etapa de cada vez.'

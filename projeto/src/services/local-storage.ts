@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { cardioSchema } from '@/domain/cardio';
 import { experienceSchema } from '@/domain/experience';
 import {
   studentSchema,
@@ -43,6 +44,7 @@ export const storedStateSchema = z
         programId: id.optional(),
         versionId: id.optional(),
         weekday: z.string().optional(),
+        cardio: z.array(cardioSchema).optional(),
       }),
     ),
     sessions: z.array(

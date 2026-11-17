@@ -1,5 +1,6 @@
 'use client';
-import { useRef, type ReactNode } from 'react';
+import { useRef, useLayoutEffect, type ReactNode } from 'react';
+import { Flip } from 'gsap/Flip';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 export const motion = {
@@ -10,6 +11,33 @@ export const motion = {
   ease: 'power2.out',
 };
 gsap.registerPlugin(useGSAP);
+gsap.registerPlugin(Flip);
+export function useExerciseReorder() {
+  const pending = useRef<ReturnType<typeof Flip.getState> | null>(null),
+    tween = useRef<gsap.core.Timeline | null>(null);
+  useLayoutEffect(() => {
+    if (!pending.current) return;
+    tween.current?.kill();
+    tween.current = Flip.from(pending.current, {
+      duration: motion.surface,
+      ease: motion.ease,
+      targets: '.studio-exercise',
+      prune: true,
+    });
+    pending.current = null;
+  });
+  useLayoutEffect(
+    () => () => {
+      tween.current?.kill();
+      pending.current = null;
+    },
+    [],
+  );
+  return () => {
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+      pending.current = Flip.getState('.studio-exercise');
+  };
+}
 export function PageMotion({
   children,
   route,

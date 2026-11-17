@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { CardioEditor, CardioQuestion } from './cardio';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Check, Layers, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
@@ -14,7 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { PageMotion } from '@/components/motion';
+import { PageMotion, useExerciseReorder } from '@/components/motion';
 import {
   EQUIPMENT,
   GOALS,
@@ -67,6 +68,7 @@ const makeRow = (exerciseId: string): StudioExercise => ({
 });
 const exerciseName = (id: string) => EXERCISES.find((e) => e.id === id)?.name ?? id;
 export function StudioPage() {
+  const captureOrder = useExerciseReorder();
   const data = useDemo();
   const repository = useRepository();
   const [view, setView] = useState<'home' | 'wizard' | 'editor' | 'templates' | 'versions'>('home');
@@ -111,9 +113,15 @@ export function StudioPage() {
   }
   function editDay(update: (day: TrainingDay) => TrainingDay) {
     if (!draft) return;
+    const nextDay = update(draft.days[dayIndex]);
+    if (
+      nextDay.exercises.map((e) => e.id).join() !==
+      draft.days[dayIndex].exercises.map((e) => e.id).join()
+    )
+      captureOrder();
     edit({
       ...draft,
-      days: draft.days.map((day, index) => (index === dayIndex ? update(day) : day)),
+      days: draft.days.map((day, index) => (index === dayIndex ? nextDay : day)),
     });
   }
   function editRow(id: string, patch: Partial<StudioExercise>) {
@@ -556,6 +564,7 @@ export function StudioPage() {
               )}
               {step === 5 && (
                 <>
+                  <CardioQuestion value={q.cardio} onChange={(value) => change('cardio', value)} />
                   <dl className="review-grid">
                     <div>
                       <dt>Aluno / idade</dt>
@@ -895,6 +904,10 @@ export function StudioPage() {
                     </select>
                   </Field>
                 </div>
+                <CardioEditor
+                  items={currentDay.cardio ?? []}
+                  onChange={(cardio) => editDay((day) => ({ ...day, cardio }))}
+                />
                 <Field label="Instruções da sessão" htmlFor="day-instructions">
                   <Textarea
                     id="day-instructions"
@@ -920,7 +933,7 @@ export function StudioPage() {
                   </Button>
                 </div>
                 {currentDay.exercises.map((row, index) => (
-                  <article className="studio-exercise" key={row.id}>
+                  <article className="studio-exercise" key={row.id} data-flip-id={row.id}>
                     <div className="page-heading">
                       <h3>
                         {index + 1}. {exerciseName(row.exerciseId)}
@@ -1316,6 +1329,11 @@ export function StudioPage() {
                 {day.weekday} · {day.name}
               </h3>
               <p>{day.instructions}</p>
+              {day.cardio?.map((c) => (
+                <p key={c.id}>
+                  Cardio: {c.modality.name} · {c.position} · {c.type} · {c.intensity}
+                </p>
+              ))}
               <ol>
                 {day.exercises.map((row) => (
                   <li key={row.id}>

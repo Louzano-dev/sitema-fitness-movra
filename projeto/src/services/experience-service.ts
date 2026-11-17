@@ -42,7 +42,7 @@ export function approveProgram(
   const state = repository.getSnapshot();
   const program = state.experience.programs.find((p) => p.id === id);
   if (!program || !reviewed) throw new Error('A revisão explícita do profissional é obrigatória.');
-  if (program.days.some((day) => !day.exercises.length))
+  if (program.days.some((day) => !day.exercises.length && !day.cardio?.length))
     throw new Error('Adicione exercícios em todos os dias.');
   if (new Set(program.days.map((day) => day.weekday)).size !== program.days.length)
     throw new Error('Organize os dias da semana sem duplicações antes de aprovar.');
@@ -77,8 +77,13 @@ export function approveProgram(
 export function foodsFor(state: DemoState, studentId: string): Food[] {
   return [...FOODS, ...state.experience.foods.filter((f) => f.ownerId === studentId)];
 }
+export const PERSONAL_FUEL_ID = 'personal:org-1';
 export function sharedMeals(state: DemoState, role: Environment, studentId: string): Meal[] {
-  if (role === 'admin' || (role === 'personal' && !state.experience.preferences[studentId]?.share))
+  if (
+    role === 'admin' ||
+    (role === 'personal' && studentId !== PERSONAL_FUEL_ID) ||
+    (role === 'aluno' && studentId === PERSONAL_FUEL_ID)
+  )
     return [];
   return state.experience.meals.filter((m) => m.studentId === studentId);
 }

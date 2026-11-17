@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Apple, Plus, EyeOff, Share2, Utensils } from 'lucide-react';
+import { Apple, Plus, Utensils } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
 import { useDemoSession } from '@/components/demo-session';
 import { PageHeader, Panel, Field, Feedback, EmptyState, Stat } from '@/components/shared';
@@ -33,6 +33,7 @@ import {
   saveFood,
   saveMeal,
   sharedMeals,
+  PERSONAL_FUEL_ID,
 } from '@/services/experience-service';
 import { errorMessage } from '@/domain/schemas';
 import { normalize, formatDate } from '@/domain/selectors';
@@ -49,21 +50,17 @@ const display = (value: number | null) =>
 export function FuelOverview({ personal = false }: { personal?: boolean }) {
   const data = useDemo();
   const { studentId } = useDemoSession();
-  const shared = data.students.filter((student) => data.experience.preferences[student.id]?.share);
-  const meals = sharedMeals(data, 'aluno', studentId).filter(
-    (meal) => meal.date === DEMO_DATE && meal.items.length > 0,
-  );
+  const meals = sharedMeals(
+    data,
+    personal ? 'personal' : 'aluno',
+    personal ? PERSONAL_FUEL_ID : studentId,
+  ).filter((m) => m.date === DEMO_DATE && m.items.length > 0);
   return (
     <Panel className="module-panel section-gap fuel-overview">
-      <p className="eyebrow">MOVRA Fuel · acompanhamento separado do treino</p>
-      <h2>{personal ? 'Registros que podem virar conversa.' : 'Minha alimentação'}</h2>
-      <p>
-        {personal
-          ? `${shared.length} alunos optaram por compartilhar registros fictícios. O diário privado não é exibido.`
-          : `${meals.length} refeições registradas hoje. Você escolhe se deseja visualizar estimativas nutricionais.`}
-      </p>
+      <h2>Minha alimentação</h2>
+      <p>{meals.length} refeições registradas hoje no seu diário individual.</p>
       <Link className="text-link" href={personal ? '/personal/alimentacao' : '/aluno/alimentacao'}>
-        {personal ? 'Consultar registros compartilhados' : 'Abrir diário ou adicionar alimento'}
+        Abrir meu diário alimentar
       </Link>
     </Panel>
   );
@@ -82,12 +79,12 @@ function Numbers({ values }: { values: Nutrients }) {
     </div>
   );
 }
-export function FuelPage({ personal = false }: { personal?: boolean }) {
+export function FuelPage({ personal: personalAccount = false }: { personal?: boolean }) {
+  const personal = false;
   const data = useDemo();
   const repository = useRepository();
   const { studentId } = useDemoSession();
-  const [selected, setSelected] = useState(studentId);
-  const id = personal ? selected : studentId;
+  const id = personalAccount ? PERSONAL_FUEL_ID : studentId;
   const [date, setDate] = useState(DEMO_DATE);
   const [modal, setModal] = useState<'meal' | 'item' | 'food' | 'recipe' | 'summary' | null>(null);
   const [query, setQuery] = useState('');
@@ -103,13 +100,11 @@ export function FuelPage({ personal = false }: { personal?: boolean }) {
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [ingredients, setIngredients] = useState<{ foodId: string; grams: number }[]>([]);
-  const preferences = data.experience.preferences[id] ?? { showNumbers: false, share: false };
-  const age = data.experience.ages[id];
-  const minor = age === undefined || age < 18;
-  const showNumbers = !minor && preferences.showNumbers;
-  const allowed = !personal || preferences.share;
+  const minor = false;
+  const showNumbers = true;
+  const allowed = true;
   const foods = foodsFor(data, id);
-  const history = sharedMeals(data, personal ? 'personal' : 'aluno', id);
+  const history = sharedMeals(data, personalAccount ? 'personal' : 'aluno', id);
   const meals = history.filter((meal) => meal.date === date);
   const favorites = data.experience.favorites[id] ?? [];
   const total = totalNutrients(
@@ -148,12 +143,6 @@ export function FuelPage({ personal = false }: { personal?: boolean }) {
     setQuery('');
     setError('');
     setModal('item');
-  }
-  function updatePreferences(patch: Partial<typeof preferences>) {
-    repository.updateExperience((state) => ({
-      ...state,
-      preferences: { ...state.preferences, [id]: { ...preferences, ...patch } },
-    }));
   }
   function duplicate(meal: Meal) {
     act(() => {
@@ -213,7 +202,7 @@ export function FuelPage({ personal = false }: { personal?: boolean }) {
     <>
       <PageHeader
         eyebrow="MOVRA Fuel · registro alimentar"
-        title={personal ? 'O que o aluno decidiu compartilhar.' : 'Um registro do seu dia.'}
+        title={personalAccount ? 'Meu diário alimentar' : 'Um registro do seu dia.'}
         description="Diário informativo com estimativas de composição. Sem dieta, metas calóricas, julgamentos ou compensação com exercícios."
         action={
           !personal ? (
@@ -235,27 +224,12 @@ export function FuelPage({ personal = false }: { personal?: boolean }) {
           <p className="eyebrow">Alimentação, com contexto</p>
           <h2>Registrar para conversar.</h2>
           <p>
-            Os alimentos não são pontuados. Você escolhe o que registrar, visualizar e compartilhar.
+            Registre sua alimentação. As estimativas representam energia e nutrientes ingeridos, não
+            gasto com exercícios. O personal não acessa o diário dos alunos.
           </p>
         </div>
       </div>
       <div className="toolbar module-toolbar">
-        {personal && (
-          <Field label="Aluno" htmlFor="fuel-student">
-            <select
-              id="fuel-student"
-              className="native-select"
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-            >
-              {data.students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        )}
         <Field label="Data do diário" htmlFor="fuel-date">
           <Input
             id="fuel-date"
@@ -266,48 +240,8 @@ export function FuelPage({ personal = false }: { personal?: boolean }) {
             }}
           />
         </Field>
-        {!personal && (
-          <>
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                disabled={minor}
-                checked={showNumbers}
-                onChange={(e) => updatePreferences({ showNumbers: e.target.checked })}
-              />
-              <EyeOff size={16} aria-hidden />
-              Mostrar estimativas nutricionais
-            </label>
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={preferences.share}
-                onChange={(e) => updatePreferences({ share: e.target.checked })}
-              />
-              <Share2 size={16} aria-hidden />
-              Compartilhar com o personal
-            </label>
-          </>
-        )}
       </div>
-      {minor && (
-        <p className="review-required" role="status">
-          {age === undefined
-            ? 'Faixa etária não informada: diário descritivo.'
-            : 'Perfil menor de idade: diário descritivo.'}{' '}
-          Números de calorias e macronutrientes não são disponibilizados automaticamente.
-          Acompanhamento depende de supervisão adequada.
-        </p>
-      )}
-      {!personal && (
-        <p className="form-help">
-          Compartilhamento{' '}
-          {preferences.share
-            ? 'ativado: o personal pode consultar este diário no protótipo'
-            : 'desativado: o diário não aparece no painel do personal'}
-          . Você pode revogar a qualquer momento. Dados locais fictícios, sem armazenamento seguro.
-        </p>
-      )}
+
       <Feedback error={error} success={feedback} />
       {!allowed ? (
         <EmptyState
@@ -1067,8 +1001,11 @@ export function FuelPage({ personal = false }: { personal?: boolean }) {
           <DialogHeader>
             <DialogTitle>Resumo demonstrativo</DialogTitle>
             <DialogDescription>
-              {formatDate(date)} · {data.students.find((student) => student.id === id)?.name}.
-              Somente registros autorizados nesta visualização.
+              {formatDate(date)} ·{' '}
+              {personalAccount
+                ? data.profiles.personal.name
+                : data.students.find((student) => student.id === id)?.name}
+              . Somente os registros do seu diário individual.
             </DialogDescription>
           </DialogHeader>
           {allowed && (

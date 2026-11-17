@@ -62,7 +62,6 @@ try {
     await page.getByRole('button', { name: 'Aluno / atleta', exact: true }).click();
     await page.locator('.entry-submit').click();
     await navigate(page, 'Alimentação', width);
-    await page.getByLabel('Mostrar estimativas nutricionais').check();
     await page.getByRole('button', { name: 'Adicionar alimento', exact: true }).click();
     await page.getByLabel('Buscar alimento', { exact: true }).fill('arroz');
     await page.getByLabel('Alimento da biblioteca').selectOption('usda-168878');

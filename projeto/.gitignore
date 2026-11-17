@@ -5,6 +5,7 @@ coverage/
 playwright-report/
 test-results/
 test-results-portable/
+test-results-*/
 playwright-portable-report/
 .env*
 !.env.example

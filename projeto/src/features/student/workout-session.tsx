@@ -1,5 +1,6 @@
 'use client';
 import { useDemoSession } from '@/components/demo-session';
+import { CardioExecution } from '../cardio';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useGSAP } from '@gsap/react';
@@ -176,6 +177,17 @@ export function WorkoutSessionPage({ id }: { id: string }) {
         }
       />
     );
+  if (!workout.exercises.length)
+    return (
+      <>
+        <PageHeader eyebrow="Sessão independente de cardio" title={workout.title} />
+        <CardioExecution workout={workout} position="Antes" />
+        <CardioExecution workout={workout} position="Depois" />
+        <Button asChild variant="outline">
+          <Link href="/aluno/historico">Consultar histórico</Link>
+        </Button>
+      </>
+    );
   const sets: SetLog[] =
     data.drafts[id] ??
     workout.exercises.flatMap((e) =>
@@ -279,6 +291,7 @@ export function WorkoutSessionPage({ id }: { id: string }) {
           'Registre a carga e as repetições executadas. Zero kg representa uma execução sem carga externa.'
         }
       />
+      <CardioExecution workout={workout} position="Antes" />
       <div className="form-actions">
         <Button
           variant="outline"
@@ -510,6 +523,7 @@ export function WorkoutSessionPage({ id }: { id: string }) {
             })}
           </fieldset>
         </Panel>
+        <CardioExecution workout={workout} position="Depois" />
         <Panel className="session-summary">
           <h2>No seu ritmo.</h2>
           <p className="mb-5">Confira os valores e marque cada série que você executou.</p>

@@ -1,6 +1,7 @@
 'use client';
 import { useDemoSession } from '@/components/demo-session';
 import { useState } from 'react';
+import { CardioHistory } from '../cardio';
 import { useDemo } from '@/components/providers';
 import { EmptyState, PageHeader, Panel, TableRegion } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ export function HistoryPage() {
         description="Revise o que você executou. As sessões preservam os valores registrados, mesmo se o treino for editado depois."
       />
       <Panel>
+        <CardioHistory studentId={activeStudentId}/>
         <div className="toolbar">
           <label className="sr-only" htmlFor="history-period">
             Período do histórico

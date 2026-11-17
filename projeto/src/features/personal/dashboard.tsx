@@ -85,6 +85,35 @@ export function PersonalDashboard() {
           <Brand compact />
         </div>
       </div>
+      <div className="stats-grid">
+        <Stat
+          label="Alunos ativos"
+          value={data.students
+            .filter((s) => s.status === 'Ativo')
+            .length.toString()
+            .padStart(2, '0')}
+          note={`${data.students.length} alunos neste espaço`}
+          icon={Users}
+        />
+        <Stat
+          label="Encontros hoje"
+          value={String(today.length).padStart(2, '0')}
+          note="Agendamentos confirmados na prévia"
+          icon={CalendarDays}
+        />
+        <Stat
+          label="Treinos disponíveis"
+          value={String(data.workouts.length).padStart(2, '0')}
+          note="Prescrições atribuídas aos alunos"
+          icon={ClipboardList}
+        />
+        <Stat
+          label="Sessões registradas"
+          value={String(data.sessions.length).padStart(2, '0')}
+          note="Histórico demonstrativo completo"
+          icon={Activity}
+        />
+      </div>
       <div className="overview-actions">
         <div>
           <span className="eyebrow">Presença no período · {range} dias</span>
@@ -115,36 +144,6 @@ export function PersonalDashboard() {
           <TextLink href="/personal/agenda">Organizar meu dia</TextLink>
           <TextLink href="/personal/exercicios">Consultar exercícios</TextLink>
         </div>
-      </div>
-      <FuelOverview personal />
-      <div className="stats-grid">
-        <Stat
-          label="Alunos ativos"
-          value={data.students
-            .filter((s) => s.status === 'Ativo')
-            .length.toString()
-            .padStart(2, '0')}
-          note={`${data.students.length} alunos neste espaço`}
-          icon={Users}
-        />
-        <Stat
-          label="Encontros hoje"
-          value={String(today.length).padStart(2, '0')}
-          note="Agendamentos confirmados na prévia"
-          icon={CalendarDays}
-        />
-        <Stat
-          label="Treinos disponíveis"
-          value={String(data.workouts.length).padStart(2, '0')}
-          note="Prescrições atribuídas aos alunos"
-          icon={ClipboardList}
-        />
-        <Stat
-          label="Sessões registradas"
-          value={String(data.sessions.length).padStart(2, '0')}
-          note="Histórico demonstrativo completo"
-          icon={Activity}
-        />
       </div>
       <div className="dashboard-grid">
         <Panel
@@ -282,6 +281,7 @@ export function PersonalDashboard() {
           </div>
         </Panel>
       </div>
+      <FuelOverview personal />
     </>
   );
 }

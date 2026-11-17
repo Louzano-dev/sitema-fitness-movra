@@ -94,7 +94,7 @@ export function TrendChart({
               {children}
               <Bar
                 dataKey="value"
-                fill="#172C29"
+                fill="var(--chart-ink, #172C29)"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={36}
                 isAnimationActive={false}

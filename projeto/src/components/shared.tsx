@@ -96,7 +96,9 @@ export function Stat({
         <span>{label}</span>
         {Icon && <Icon size={18} aria-hidden />}
       </div>
-      <strong>{value}</strong>
+      <strong key={value} className="stat-value">
+        {value}
+      </strong>
       <p>{note}</p>
     </div>
   );

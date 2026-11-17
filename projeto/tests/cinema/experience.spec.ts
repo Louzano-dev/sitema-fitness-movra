@@ -152,7 +152,6 @@ for (const width of [390, 1280])
     await enter(page, 'aluno');
     await page.setViewportSize({ width, height: 900 });
     await navigate(page, 'Alimentação');
-    await page.getByLabel('Mostrar estimativas nutricionais').check();
     await addRice(page);
     await expect(page.locator('.stats-grid')).toContainText('195 kcal');
     await page
@@ -183,38 +182,39 @@ for (const width of [390, 1280])
     await page.screenshot({ path: `test-results/fuel-${width}.png`, fullPage: true });
   });
 
-test('Fuel privacidade entre alunos, compartilhamento e revogação', async ({ page }) => {
+test('Fuel diarios individuais: Personal sem acesso aos alunos e alimentacao propria', async ({
+  page,
+}) => {
   test.setTimeout(120000);
   await enter(page, 'aluno');
   await navigate(page, 'Alimentação');
   await addRice(page);
+  await expect(page.getByLabel('Compartilhar com o personal')).toHaveCount(0);
   await switchRole(page, 'personal');
   await navigate(page, 'Alimentação');
-  await expect(
-    page.getByRole('heading', { name: 'Este diário não foi compartilhado.' }),
-  ).toBeVisible();
-  await expect(page.locator('.meal-card')).toHaveCount(0);
-  await switchRole(page, 'aluno');
-  await navigate(page, 'Alimentação');
-  await page.getByLabel('Compartilhar com o personal').check();
-  await switchRole(page, 'personal');
-  await navigate(page, 'Alimentação');
-  await expect(page.locator('.food-row')).toHaveCount(1);
+  await expect(page.getByLabel('Aluno', { exact: true })).toHaveCount(0);
+  await expect(page.locator('.food-row')).toHaveCount(0);
+  await addRice(page, '200');
+  await expect(page.locator('.stats-grid')).toContainText('260 kcal');
   await switchRole(page, 'aluno', 'bruno');
   await navigate(page, 'Alimentação');
   await expect(page.locator('.food-row')).toHaveCount(0);
   await switchRole(page, 'aluno', 'ana');
   await navigate(page, 'Alimentação');
-  await page.getByLabel('Compartilhar com o personal').uncheck();
+  await expect(page.locator('.food-row')).toHaveCount(1);
+  await expect(page.locator('.stats-grid')).toContainText('195 kcal');
   await switchRole(page, 'personal');
   await navigate(page, 'Alimentação');
-  await expect(page.locator('.meal-card')).toHaveCount(0);
+  await expect(page.locator('.stats-grid')).toContainText('260 kcal');
+  await page.reload();
+  await page.getByRole('button', { name: 'Entrar na demonstração', exact: true }).click();
+  await navigate(page, 'Alimentação');
+  await expect(page.locator('.stats-grid')).toContainText('260 kcal');
 });
 
 test('Fuel alimento personalizado, estimativa parcial e receita', async ({ page }) => {
   await enter(page, 'aluno');
   await navigate(page, 'Alimentação');
-  await page.getByLabel('Mostrar estimativas nutricionais').check();
   await page.getByRole('button', { name: 'Cadastrar alimento', exact: true }).click();
   await page.getByLabel('Nome do alimento', { exact: true }).fill('Produto fictício');
   await page.getByLabel('Porção de referência em gramas').fill('50');
@@ -265,16 +265,20 @@ test('Studio manual: biblioteca, parâmetros, duplicação, ordem e modelo', asy
   await expect(page.getByRole('button', { name: 'Usar modelo', exact: true })).toHaveCount(1);
 });
 
-test('Fuel menores: diário descritivo e números bloqueados', async ({ page }) => {
+test('Fuel mostra estimativas automaticamente em todos os perfis, sem alternância', async ({
+  page,
+}) => {
   await enter(page, 'aluno', 'clara');
   await navigate(page, 'Alimentação');
-  await expect(page.getByLabel('Mostrar estimativas nutricionais')).toBeDisabled();
+  await expect(page.getByLabel('Mostrar estimativas nutricionais')).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: 'Estimativas do dia', exact: true }),
+  ).toBeVisible();
   await addRice(page);
-  await expect(page.locator('.nutrition-numbers')).toHaveCount(0);
-  await expect(page.locator('.stats-grid')).not.toContainText('kcal');
-  await expect(page.locator('.review-required')).toContainText('menor de idade');
+  await expect(page.locator('.nutrition-numbers').first()).toBeVisible();
+  await expect(page.locator('.stats-grid')).toContainText('195 kcal');
   await page.getByRole('button', { name: 'Cadastrar alimento', exact: true }).click();
-  await expect(page.getByLabel('Energia (kcal)', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Energia (kcal)', { exact: true })).toBeVisible();
 });
 
 test('Studio e Fuel: acessibilidade, redução de movimento e redefinição', async ({ page }) => {
