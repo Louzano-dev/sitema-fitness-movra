@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 const root = fileURLToPath(new URL('../', import.meta.url));
+const output = path.join(root, process.argv[2] ?? 'docs/evidence');
+await fs.mkdir(output, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome' });
 try {
   const context = await browser.newContext({
@@ -48,10 +50,10 @@ try {
   const lifecycle = [];
   for (let cycle = 1; cycle <= 3; cycle++) {
     await page.getByRole('button', { name: 'Experimentar a MOVRA' }).click();
-    await page.getByRole('button', { name: 'Experimentar sem preencher' }).click();
+    await page.getByRole('button', { name: 'Entrar na demonstração' }).click();
     await expect(page.locator('.pin-spacer')).toHaveCount(0);
     await expect(page.locator('video')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Conta de Alex Personal', exact: true }).click();
+    await page.getByRole('button', { name: 'Conta de Marina Oliveira', exact: true }).click();
     await page.getByRole('button', { name: 'Sair da demonstração' }).click();
     await expect(page.locator('.pin-spacer')).toHaveCount(1);
     await expect(page.locator('video')).toHaveCount(1);
@@ -66,7 +68,7 @@ try {
     lifecycle,
   };
   await fs.writeFile(
-    path.join(root, 'docs/evidence/motion-observations.json'),
+    path.join(output, 'motion-observations.json'),
     JSON.stringify(result, null, 2),
   );
   console.log(JSON.stringify(result, null, 2));

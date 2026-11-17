@@ -91,7 +91,8 @@ export function StudentForm({
         </select>
       </Field>
       <p className="form-help">
-        Use somente dados fictícios. A alteração permanece em memória até recarregar.
+        Use somente dados fictícios. Os registros ficam neste navegador quando o armazenamento local
+        está disponível.
       </p>
       <Feedback error={errors.root?.message} />
       <Button type="submit" disabled={isSubmitting}>

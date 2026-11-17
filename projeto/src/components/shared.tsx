@@ -1,5 +1,5 @@
 'use client';
-import type { ReactNode } from 'react';
+import { cloneElement, isValidElement, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, CircleCheck, SearchX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -147,10 +147,22 @@ export function Field({
   error?: string;
   children: ReactNode;
 }) {
+  // Connect validation messages for native controls and shadcn inputs in one place.
+  const content =
+    error &&
+    htmlFor &&
+    isValidElement<{ 'aria-describedby'?: string; 'aria-invalid'?: boolean }>(children)
+      ? cloneElement(children, {
+          'aria-invalid': true,
+          'aria-describedby': [
+            ...new Set([children.props['aria-describedby'], `${htmlFor}-error`].filter(Boolean)),
+          ].join(' '),
+        })
+      : children;
   return (
     <div className="field">
       <label htmlFor={htmlFor}>{label}</label>
-      {children}
+      {content}
       {error && (
         <p className="field-error" id={htmlFor ? `${htmlFor}-error` : undefined}>
           {error}

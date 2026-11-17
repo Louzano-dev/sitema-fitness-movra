@@ -33,7 +33,7 @@ export function StudentDetail({ id }: { id: string }) {
     return (
       <EmptyState
         title="Aluno não encontrado."
-        description="Este aluno pode ter sido criado em uma sessão anterior. Recarregar restaura os dados iniciais."
+        description="O aluno não está nos dados locais desta demonstração. Retorne à lista para escolher outro perfil."
         action={
           <Button asChild>
             <Link href="/personal/alunos">Voltar aos alunos</Link>
@@ -135,6 +135,7 @@ export function StudentDetail({ id }: { id: string }) {
                     <p>
                       {formatDate(s.date)} · {s.duration} min · {s.sets.length} séries
                     </p>
+                    {s.note && <p className="form-help">Feedback do aluno: {s.note}</p>}
                   </div>
                   <Status value="Concluído" />
                 </div>

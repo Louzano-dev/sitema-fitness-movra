@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { Activity, Search } from 'lucide-react';
-import { useDemo } from '@/components/providers';
+import { useDemo, useRepository } from '@/components/providers';
+import { EXERCISES } from '@/domain/exercise-catalog';
 import { EmptyState, PageHeader, Panel } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,12 +17,22 @@ import {
 import { normalize } from '@/domain/selectors';
 export function ExercisesPage() {
   const data = useDemo();
+  const repository = useRepository();
+  const [pattern, setPattern] = useState('all');
+  const [category, setCategory] = useState('all');
+  const [scope, setScope] = useState('all');
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('all');
   const [equipment, setEquipment] = useState('all');
-  const exercises = data.exercises.filter(
+  const exercises = EXERCISES.filter(
     (e) =>
-      normalize(e.name).includes(normalize(query)) &&
+      normalize(`${e.name} ${e.tags.join(' ')}`).includes(normalize(query)) &&
+      (pattern === 'all' || e.pattern === pattern) &&
+      (category === 'all' || e.category === category) &&
+      (scope === 'all' ||
+        (scope === 'favorites'
+          ? data.experience.exerciseFavorites.includes(e.id)
+          : data.experience.recentExercises.includes(e.id))) &&
       (group === 'all' || e.group === group) &&
       (equipment === 'all' || e.equipment === equipment),
   );
@@ -55,7 +66,7 @@ export function ExercisesPage() {
           onChange={(e) => setGroup(e.target.value)}
         >
           <option value="all">Todos os grupos</option>
-          {[...new Set(data.exercises.map((e) => e.group))].map((g) => (
+          {[...new Set(EXERCISES.map((e) => e.group))].map((g) => (
             <option key={g}>{g}</option>
           ))}
         </select>
@@ -69,10 +80,28 @@ export function ExercisesPage() {
           onChange={(e) => setEquipment(e.target.value)}
         >
           <option value="all">Todos os equipamentos</option>
-          {[...new Set(data.exercises.map((e) => e.equipment))].map((g) => (
+          {[...new Set(EXERCISES.map((e) => e.equipment))].map((g) => (
             <option key={g}>{g}</option>
           ))}
         </select>
+        <FieldFilter
+          label="Padrão de movimento"
+          value={pattern}
+          change={setPattern}
+          options={[...new Set(EXERCISES.map((e) => e.pattern))]}
+        />
+        <FieldFilter
+          label="Categoria de exercício"
+          value={category}
+          change={setCategory}
+          options={[...new Set(EXERCISES.map((e) => e.category))]}
+        />
+        <FieldFilter
+          label="Favoritos e recentes"
+          value={scope}
+          change={setScope}
+          options={['favorites', 'recent']}
+        />
       </div>
       {exercises.length ? (
         <div className="exercise-grid">
@@ -81,12 +110,46 @@ export function ExercisesPage() {
               <div className="exercise-glyph" aria-hidden>
                 <Activity strokeWidth={1.3} />
                 <span className="tag">{e.equipment}</span>
+                <span className="media-placeholder">Mídia não cadastrada</span>
               </div>
               <h2>{e.name}</h2>
               <p>{e.group}</p>
+              <p className="form-help">
+                {e.pattern} · {e.category}
+              </p>
+              <Button
+                variant="ghost"
+                aria-label={`Favorito: ${e.name}`}
+                aria-pressed={data.experience.exerciseFavorites.includes(e.id)}
+                onClick={() =>
+                  repository.updateExperience((state) => ({
+                    ...state,
+                    exerciseFavorites: state.exerciseFavorites.includes(e.id)
+                      ? state.exerciseFavorites.filter((id) => id !== e.id)
+                      : [...state.exerciseFavorites, e.id],
+                  }))
+                }
+              >
+                {data.experience.exerciseFavorites.includes(e.id)
+                  ? '★ Favorito'
+                  : '☆ Salvar favorito'}
+              </Button>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline">Ver instruções</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      repository.updateExperience((state) => ({
+                        ...state,
+                        recentExercises: [
+                          e.id,
+                          ...state.recentExercises.filter((id) => id !== e.id),
+                        ].slice(0, 20),
+                      }))
+                    }
+                  >
+                    Ver instruções
+                  </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -96,6 +159,14 @@ export function ExercisesPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <p>{e.instructions}</p>
+                  <p>{e.technical}</p>
+                  <p>Grupos secundários: {e.secondary.join(', ')}</p>
+                  <p>
+                    Alternativas no catálogo:{' '}
+                    {e.alternatives
+                      .map((id) => EXERCISES.find((exercise) => exercise.id === id)?.name)
+                      .join(', ') || 'Nenhuma cadastrada'}
+                  </p>
                   <p className="form-help">
                     Conteúdo de exemplo. Orientações individuais e avaliação profissional são
                     necessárias em um atendimento real.
@@ -115,6 +186,9 @@ export function ExercisesPage() {
                   setQuery('');
                   setGroup('all');
                   setEquipment('all');
+                  setPattern('all');
+                  setCategory('all');
+                  setScope('all');
                 }}
               >
                 Limpar filtros
@@ -124,5 +198,30 @@ export function ExercisesPage() {
         </Panel>
       )}
     </>
+  );
+}
+function FieldFilter({
+  label,
+  value,
+  change,
+  options,
+}: {
+  label: string;
+  value: string;
+  change: (value: string) => void;
+  options: string[];
+}) {
+  return (
+    <label className="filter-label">
+      {label}
+      <select className="native-select" value={value} onChange={(e) => change(e.target.value)}>
+        <option value="all">Todos</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option === 'favorites' ? 'Favoritos' : option === 'recent' ? 'Recentes' : option}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

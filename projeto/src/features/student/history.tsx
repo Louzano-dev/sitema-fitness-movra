@@ -1,4 +1,5 @@
 'use client';
+import { useDemoSession } from '@/components/demo-session';
 import { useState } from 'react';
 import { useDemo } from '@/components/providers';
 import { EmptyState, PageHeader, Panel, TableRegion } from '@/components/shared';
@@ -11,12 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { STUDENT_ID } from '@/domain/types';
 import { formatDate, sessionVolume, studentSessions } from '@/domain/selectors';
 export function HistoryPage() {
+  const { studentId: activeStudentId } = useDemoSession();
   const data = useDemo();
   const [period, setPeriod] = useState('all');
-  const sessions = studentSessions(data, STUDENT_ID).filter(
+  const sessions = studentSessions(data, activeStudentId).filter(
     (s) => period === 'all' || s.date >= '2026-11-08',
   );
   return (
@@ -96,6 +97,7 @@ export function HistoryPage() {
                     Volume registrado: {sessionVolume(s.sets).toLocaleString('pt-BR')}{' '}
                     kg·repetições. Soma de carga × repetições; não é um indicador clínico.
                   </p>
+                  {s.note && <p>Feedback registrado: {s.note}</p>}
                 </DialogContent>
               </Dialog>
             </div>

@@ -28,6 +28,9 @@ import { SubscriptionsPage } from '@/features/admin/subscriptions';
 import type { Environment } from '@/domain/types';
 import Link, { useLocation } from './router';
 import { LoginPage } from '@/features/login';
+import { StudioPage } from '@/features/studio';
+import { FuelPage } from '@/features/fuel';
+import { StudentAgenda } from '@/features/student/agenda';
 
 class PortableErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -39,7 +42,7 @@ class PortableErrorBoundary extends Component<{ children: ReactNode }, { failed:
       return (
         <main className="standalone">
           <h1>Não foi possível abrir esta tela.</h1>
-          <p>Reabra o arquivo para reiniciar a demonstração com os dados iniciais.</p>
+          <p>Reabra o arquivo para tentar novamente. Os registros locais salvos serão mantidos.</p>
           <button className="button-link" onClick={() => window.location.reload()}>
             Reiniciar demonstração
           </button>
@@ -52,6 +55,10 @@ class PortableErrorBoundary extends Component<{ children: ReactNode }, { failed:
 function RouteView({ path, query }: { path: string; query: URLSearchParams }) {
   if (path === '/entrar' || path === '/') return <LoginPage />;
   if (path === '/personal') return <PersonalDashboard />;
+  if (path === '/personal/studio') return <StudioPage />;
+  if (path === '/personal/alimentacao') return <FuelPage personal />;
+  if (path === '/aluno/alimentacao') return <FuelPage />;
+  if (path === '/aluno/agenda') return <StudentAgenda />;
   if (path === '/personal/alunos') return <StudentsPage />;
   if (path === '/personal/treinos') return <WorkoutsPage />;
   if (path === '/personal/treinos/novo')

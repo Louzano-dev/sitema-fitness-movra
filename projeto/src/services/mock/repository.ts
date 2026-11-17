@@ -25,15 +25,117 @@ import {
 } from '@/domain/types';
 import type { MovraRepository } from '../repository';
 import { createSeed } from './seed';
+import { experienceSchema, type ExperienceState } from '@/domain/experience';
+import { readLocal, writeLocal } from '../local-storage';
 
 // Adaptador de demonstração. Estas verificações garantem consistência local, não autorização.
 export class MockRepository implements MovraRepository {
   private state: DemoState;
   private listeners = new Set<() => void>();
+  private storage?: Pick<Storage, 'getItem' | 'setItem'>;
   constructor(seed: DemoState = createSeed()) {
     this.state = structuredClone(seed);
   }
   getSnapshot = () => this.state;
+  saveSessionNote(sessionId: string, note: string, studentId: string) {
+    if (
+      note.length > 500 ||
+      !this.state.sessions.some((s) => s.id === sessionId && s.studentId === studentId)
+    )
+      throw new Error('Registro de feedback inválido.');
+    this.commit({
+      sessions: this.state.sessions.map((s) => (s.id === sessionId ? { ...s, note } : s)),
+    });
+  }
+  attachStorage(storage?: Pick<Storage, 'getItem' | 'setItem'>) {
+    if (!storage) {
+      this.storage = undefined;
+      this.state = { ...this.state, storageState: 'unavailable' };
+      this.listeners.forEach((listener) => listener());
+      return;
+    }
+    this.storage = storage;
+    try {
+      const restored = readLocal(storage);
+      this.state = restored ?? this.state;
+      this.commit({ storageState: 'local' });
+    } catch {
+      this.state = { ...this.state, storageState: 'invalid' };
+      this.listeners.forEach((listener) => listener());
+    }
+  }
+  updateExperience(update: (state: ExperienceState) => ExperienceState) {
+    this.commit({
+      experience: experienceSchema.parse(update(structuredClone(this.state.experience))),
+    });
+  }
+  async assignProgram(programId: string) {
+    const program = this.state.experience.programs.find((p) => p.id === programId);
+    if (!program || program.status !== 'Aprovado' || !program.approvedVersion)
+      throw new Error('Revise e aprove a versão antes de atribuir.');
+    this.student(program.studentId);
+    const snapshot = this.state.experience.versions.find(
+      (p) => p.approvedVersion === program.approvedVersion,
+    );
+    if (!snapshot || JSON.stringify(snapshot.days) !== JSON.stringify(program.days))
+      throw new Error('A ficha mudou após aprovação. Revise novamente.');
+    const exercises = [...this.state.exercises];
+    const workouts = program.days.map((day) => ({
+      id: this.id(),
+      organizationId: ORGANIZATION_ID,
+      studentId: program.studentId,
+      title: `${program.title} · ${day.name}`,
+      notes: day.instructions,
+      updatedAt: DEMO_DATE,
+      programId: program.id,
+      versionId: program.approvedVersion,
+      weekday: day.weekday,
+      exercises: day.exercises.map((row) => {
+        const original = exercises.find((e) => e.id === row.exerciseId);
+        if (!original) throw new Error('Exercício não encontrado.');
+        const alias = `${original.id}--${program.approvedVersion}--${row.id}`;
+        exercises.push({ ...original, id: alias });
+        return {
+          exerciseId: alias,
+          sets: row.sets,
+          reps: row.reps,
+          repsMax: row.repsMax,
+          rest: row.rest,
+          kg: row.kg,
+          notes: row.notes,
+          rowId: row.id,
+        };
+      }),
+    }));
+    this.commit({
+      exercises,
+      workouts: [...workouts, ...this.state.workouts],
+      experience: {
+        ...this.state.experience,
+        recentExercises: [
+          ...new Set([
+            ...program.days.flatMap((day) => day.exercises.map((row) => row.exerciseId)),
+            ...this.state.experience.recentExercises,
+          ]),
+        ].slice(0, 20),
+        programs: this.state.experience.programs.map((p) =>
+          p.id === programId ? { ...p, status: 'Atribuído' } : p,
+        ),
+        assignments: [
+          ...this.state.experience.assignments,
+          {
+            id: this.id(),
+            programId,
+            versionId: program.approvedVersion,
+            studentId: program.studentId,
+            workoutIds: workouts.map((w) => w.id),
+            date: DEMO_DATE,
+          },
+        ],
+      },
+    });
+    return workouts.map((w) => w.id);
+  }
   reset = () => {
     this.commit(createSeed());
   };
@@ -45,6 +147,13 @@ export class MockRepository implements MovraRepository {
   };
   private commit(patch: Partial<DemoState>) {
     this.state = { ...this.state, ...patch };
+    if (this.storage)
+      try {
+        writeLocal(this.storage, this.state);
+        this.state = { ...this.state, storageState: 'local' };
+      } catch {
+        this.state = { ...this.state, storageState: 'unavailable' };
+      }
     this.listeners.forEach((listener) => listener());
   }
   private id() {
@@ -144,24 +253,36 @@ export class MockRepository implements MovraRepository {
       throw new Error('Já existe uma avaliação nesta data.');
     this.commit({ measurements: [...this.state.measurements, { ...parsed, id: this.id() }] });
   }
-  async saveProfile(role: Environment, input: Profile) {
+  async saveProfile(role: Environment, input: Profile, studentId = STUDENT_ID) {
     const profile = profileSchema.parse(input);
     if (role === 'aluno') {
       if (
         this.state.students.some(
-          (s) => s.id !== STUDENT_ID && s.email.toLowerCase() === profile.email.toLowerCase(),
+          (s) => s.id !== studentId && s.email.toLowerCase() === profile.email.toLowerCase(),
         )
       )
         throw new Error('Este e-mail já está em uso na demonstração.');
       this.commit({
         profiles: { ...this.state.profiles, [role]: profile },
         students: this.state.students.map((s) =>
-          s.id === STUDENT_ID
+          s.id === studentId
             ? { ...s, name: profile.name, email: profile.email, goal: profile.specialty }
             : s,
         ),
       });
-    } else this.commit({ profiles: { ...this.state.profiles, [role]: profile } });
+    } else
+      this.commit({
+        profiles: { ...this.state.profiles, [role]: profile },
+        ...(role === 'personal'
+          ? {
+              organizations: this.state.organizations.map((organization) =>
+                organization.id === ORGANIZATION_ID
+                  ? { ...organization, owner: profile.name }
+                  : organization,
+              ),
+            }
+          : {}),
+      });
   }
   async savePlan(id: string, input: Omit<Plan, 'id'>) {
     const parsed = planSchema.parse(input);
@@ -187,9 +308,9 @@ export class MockRepository implements MovraRepository {
   saveDraft(workoutId: string, sets: SetLog[]) {
     this.commit({ drafts: { ...this.state.drafts, [workoutId]: structuredClone(sets) } });
   }
-  async finishWorkout(workoutId: string, duration: number) {
+  async finishWorkout(workoutId: string, duration: number, studentId = STUDENT_ID, note = '') {
     const workout = this.state.workouts.find(
-      (w) => w.id === workoutId && w.studentId === STUDENT_ID,
+      (w) => w.id === workoutId && w.studentId === studentId,
     );
     if (!workout) throw new Error('Treino não disponível para o aluno demonstrativo.');
     const sets = this.state.drafts[workoutId] ?? [];
@@ -214,7 +335,9 @@ export class MockRepository implements MovraRepository {
     const id = this.id();
     const session = {
       id,
-      studentId: STUDENT_ID,
+      studentId,
+      versionId: workout.versionId,
+      note: note.slice(0, 500),
       workoutId,
       title: workout.title,
       date: DEMO_DATE,

@@ -47,6 +47,7 @@ export function WorkoutCards({
               <span className="tag">Prescrição demonstrativa</span>
             </div>
             <h2>{w.title}</h2>
+            {w.weekday && <p className="eyebrow">{w.weekday} · versão revisada</p>}
             <p>
               {studentView
                 ? 'Uma etapa de cada vez.'

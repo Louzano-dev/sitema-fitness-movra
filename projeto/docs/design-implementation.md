@@ -1,4 +1,4 @@
-# Design system aplicado · MOVRA 2.0
+# Design system aplicado · MOVRA 3.0
 
 A identidade da primeira etapa foi preservada. Esta versão aplica o sistema a uma aplicação, com páginas e densidades diferentes para personal, aluno e operação.
 
@@ -20,7 +20,11 @@ Navegação persistente verde, conteúdo off-white e superfícies brancas; lima 
 
 Formulários usam validação nativa/Zod, mensagens de erro e confirmação explícita de atualização local. Estados vazios para filtros sem resultado, aluno sem treino ou avaliação e agenda livre. App Router fornece estados de carregamento, erro e rota desconhecida. Mutações têm estado ocupado e desabilitam envio enquanto pendentes.
 
-Trocar ambiente encerra a sessão local e retorna à seleção na entrada. Não concede acesso nem autentica. Cabeçalho e rodapé identificam dados fictícios e memória temporária. A identidade é dinâmica; o menu de conta está na lateral e no avatar do cabeçalho.
+Trocar ambiente retorna à seleção na entrada e preserva os registros locais. Sair encerra a visualização; redefinir os exemplos exige confirmação em Configurações/Meu perfil. Não concede acesso nem autentica. A entrada possui seleção de perfil, identidade do aluno e nome opcional; nenhum campo de senha/e-mail ou ação de criar/recuperar conta. O cabeçalho identifica dados fictícios e o estado do armazenamento. A identidade é dinâmica; o menu de perfil está na lateral e no avatar do cabeçalho.
+
+Studio e Fuel usam os mesmos tokens e componentes, com superfícies verdes para orientação e brancas para edição. O questionário mantém uma etapa por vez; o editor separa dias, parâmetros e revisão. A seleção alimentar no celular dá lugar à quantidade após escolher o alimento; origem e favoritos ficam em um disclosure, sem esconder o botão de salvar. A lateral permite rolagem em telas baixas. A navegação inferior do aluno tem cinco destinos; agenda e histórico continuam acessíveis pelo menu.
+
+Dados de nutrição não são metas: números opcionais, sem cores de julgamento, estimativas parciais explícitas e modo descritivo para menores. Compartilhamento é um controle independente. Interações frequentes não reiniciam animação/foco de página; `PageMotion` interno usa `focusPage={false}`. A navegação real continua levando foco ao título.
 
 ## Responsividade e acessibilidade
 
@@ -36,7 +40,11 @@ Na entrada: timeline de 0,8 s na cena e stagger curto nos títulos/campos. Nenhu
 
 Movimento reduzido mantém leitura linear, elimina autoplay/pin/parallax/entradas e mostra poster. O vídeo pausa fora da tela ou com aba oculta e respeita pausa manual e bloqueio de autoplay. O formulário tem camada independente, com contraste sólido por trás da translucidez.
 
-No editor, a carga prescrita é diferente do último registro executado. Busca/grupo filtram a biblioteca; modelos copiam os campos; a prévia validada precede atribuição local. No aluno, a carga começa na prescrição e o último registro aparece com data, sem substituir silenciosamente o valor.
+No editor, a carga prescrita é diferente do último registro executado. Busca/grupo filtram a biblioteca; modelos copiam os campos; a prévia validada precede atribuição local. No aluno, a carga começa na prescrição e o último registro aparece com data. A repetição da primeira série preenche somente as próximas séries em aberto. Editar uma série concluída pede nova confirmação. Valores inválidos impedem marcar a série.
+
+O cronômetro e progresso ficam em superfície verde profunda, com números lima e controles persistentes acima das séries no celular. Pausar preserva o tempo restante; +15 s ajusta sem reiniciar; pular encerra. A marcação, os campos inválidos e a contagem acompanham texto e semântica, além da cor. Os inputs reservam margem para evitar foco encoberto pelo cronômetro e navegação inferior.
+
+Gráficos recebem uma revelação de opacity/translate, no viewport ou ao mudar dados, com `useGSAP` e cleanup. Valores e tabelas não são interpolados. A entrada de páginas move 8 px e transfere foco para o título; modais usam opacity/scale sem disputar a translação de posicionamento. O drawer zera as classes de translação central do diálogo, incluindo na exportação portátil.
 
 ## Revisão
 

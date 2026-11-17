@@ -1,19 +1,24 @@
 'use client';
+import { useDemoSession } from '@/components/demo-session';
 import { ArrowRight, CalendarDays, ClipboardList, Clock3, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { Brand } from '@/components/brand';
 import { useDemo } from '@/components/providers';
 import { EmptyState, PageHeader, Panel, TextLink } from '@/components/shared';
 import { Button } from '@/components/ui/button';
-import { STUDENT_ID, DEMO_DATE } from '@/domain/types';
+import { DEMO_DATE } from '@/domain/types';
 import { formatDate, studentSessions } from '@/domain/selectors';
 import { WorkoutCards } from '@/features/personal/workouts';
+import { FuelOverview } from '@/features/fuel';
 export function StudentHome() {
+  const { studentId: activeStudentId } = useDemoSession();
   const data = useDemo();
-  const sessions = studentSessions(data, STUDENT_ID);
-  const workouts = data.workouts.filter((w) => w.studentId === STUDENT_ID);
+  const sessions = studentSessions(data, activeStudentId);
+  const workouts = data.workouts.filter((w) => w.studentId === activeStudentId);
   const today = data.appointments
-    .filter((a) => a.studentId === STUDENT_ID && a.date >= DEMO_DATE && a.status === 'Agendado')
+    .filter(
+      (a) => a.studentId === activeStudentId && a.date >= DEMO_DATE && a.status === 'Agendado',
+    )
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
   const workout = workouts[0];
   return (
@@ -99,6 +104,7 @@ export function StudentHome() {
           </div>
         </Panel>
       </div>
+      <FuelOverview />
       <div className="section-gap">
         <div className="page-heading">
           <h2 className="flex items-center gap-2">
@@ -117,6 +123,7 @@ export function StudentHome() {
   );
 }
 export function StudentWorkouts() {
+  const { studentId: activeStudentId } = useDemoSession();
   const data = useDemo();
   return (
     <>
@@ -126,7 +133,7 @@ export function StudentWorkouts() {
         description="Veja os treinos atribuídos pelo personal e escolha qual deseja registrar."
       />
       <WorkoutCards
-        workouts={data.workouts.filter((w) => w.studentId === STUDENT_ID)}
+        workouts={data.workouts.filter((w) => w.studentId === activeStudentId)}
         studentView
       />
     </>

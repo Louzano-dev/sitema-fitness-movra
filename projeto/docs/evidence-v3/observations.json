@@ -1,0 +1,30 @@
+[
+  {
+    "width": 360,
+    "studioOverflow": false,
+    "fuelOverflow": false,
+    "errors": [],
+    "external": []
+  },
+  {
+    "width": 768,
+    "studioOverflow": false,
+    "fuelOverflow": false,
+    "errors": [],
+    "external": []
+  },
+  {
+    "width": 1280,
+    "studioOverflow": false,
+    "fuelOverflow": false,
+    "errors": [],
+    "external": []
+  },
+  {
+    "width": 1920,
+    "studioOverflow": false,
+    "fuelOverflow": false,
+    "errors": [],
+    "external": []
+  }
+]

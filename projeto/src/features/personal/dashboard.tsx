@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { TrendChart } from '@/components/charts';
 import { Brand } from '@/components/brand';
+import { FuelOverview } from '@/features/fuel';
 import { DEMO_DATE } from '@/domain/types';
 import { formatDate, studentSessions } from '@/domain/selectors';
 export function PersonalDashboard() {
@@ -110,10 +111,12 @@ export function PersonalDashboard() {
           </p>
         </div>
         <div className="quick-actions">
+          <TextLink href="/personal/studio">Gerar proposta no Studio</TextLink>
           <TextLink href="/personal/agenda">Organizar meu dia</TextLink>
           <TextLink href="/personal/exercicios">Consultar exercícios</TextLink>
         </div>
       </div>
+      <FuelOverview personal />
       <div className="stats-grid">
         <Stat
           label="Alunos ativos"

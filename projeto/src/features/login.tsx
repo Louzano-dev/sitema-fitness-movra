@@ -4,17 +4,7 @@ import { useRouter } from 'next/navigation';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
-import {
-  ArrowDown,
-  ArrowUpRight,
-  Check,
-  Eye,
-  EyeOff,
-  Layers,
-  Pause,
-  Play,
-  ShieldCheck,
-} from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Check, Layers, Pause, Play, Info } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,13 +13,7 @@ import { useDemoSession } from '@/components/demo-session';
 import { TrendChart } from '@/components/charts';
 import { LOGIN_POSTER, LOGIN_VIDEO } from './login-media';
 import type { Environment } from '@/domain/types';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useDemo } from '@/components/providers';
 import { PersonalDashboard } from './personal/dashboard';
 import { motion } from '@/components/motion';
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -40,21 +24,19 @@ const subscribeMotion = (callback: () => void) => {
 };
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 export function LoginPage() {
-  const { enter } = useDemoSession();
+  const { enter, suggestedRole, studentId } = useDemoSession();
+  const [selectedStudent, setSelectedStudent] = useState(studentId);
+  const data = useDemo();
   const router = useRouter();
   const scope = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [creationStep, setCreationStep] = useState(0);
-  const [role, setRole] = useState<Environment>('personal');
+  const [role, setRole] = useState<Environment>(suggestedRole);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
-  const [email, setEmail] = useState('personal@example.com');
-  const [showPassword, setShowPassword] = useState(false);
-  const [accountMode, setAccountMode] = useState<'recover' | 'create' | null>(null);
-  const [accountFeedback, setAccountFeedback] = useState('');
   const manuallyPaused = useRef(false);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const reduce = useSyncExternalStore(subscribeMotion, reducedMotion, () => true);
@@ -106,7 +88,7 @@ export function LoginPage() {
       media.add('(prefers-reduced-motion: no-preference)', () => {
         gsap
           .timeline({ defaults: { duration: motion.entrance, ease: motion.ease } })
-          .fromTo('.entry-scene,.entry-video', { scale: 1.025 }, { scale: 1, duration: 0.8 })
+          .fromTo('.entry-video', { scale: 1.025 }, { scale: 1, duration: 0.8 })
           .fromTo('.entry-nav .brand', { y: -12 }, { y: 0 }, 0)
           .fromTo('.entry-copy h1 .title-line', { y: 24 }, { y: 0, stagger: 0.07 }, 0.08)
           .fromTo('.entry-form', { x: 16 }, { x: 0 }, 0.12)
@@ -184,12 +166,15 @@ export function LoginPage() {
     },
     { scope },
   );
-  async function start(nextRole = role, nextName = name, destination?: string, nextEmail = email) {
+  async function start(nextRole = role, nextName = name, destination?: string) {
     setBusy(true);
     setError('');
     try {
-      await enter(nextRole, nextName, nextEmail);
-      setEmail('personal@example.com');
+      const defaultName =
+        nextRole === 'aluno'
+          ? (data.students.find((s) => s.id === selectedStudent)?.name ?? 'Aluno Exemplo')
+          : data.profiles[nextRole].name;
+      await enter(nextRole, nextName.trim() || defaultName, undefined, selectedStudent);
       router.push(destination ?? `/${nextRole}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Revise os dados.');
@@ -285,7 +270,7 @@ export function LoginPage() {
               <Brand />
             </div>
             <h2>Bom ter você aqui.</h2>
-            <p>Escolha como quer experimentar a MOVRA.</p>
+            <p>Um espaço para explorar. Sem criar conta.</p>
             <div className="entry-roles" aria-label="Tipo de perfil">
               <button
                 type="button"
@@ -302,6 +287,40 @@ export function LoginPage() {
                 Aluno / atleta
               </button>
             </div>
+            <div className="entry-profile-preview" aria-live="polite">
+              {role === 'aluno' && (
+                <Field label="Aluno demonstrativo" htmlFor="demo-student">
+                  <select
+                    id="demo-student"
+                    className="native-select"
+                    value={selectedStudent}
+                    onChange={(event) => {
+                      setSelectedStudent(event.target.value);
+                      setName('');
+                    }}
+                  >
+                    {data.students.map((student) => (
+                      <option key={student.id} value={student.id}>
+                        {student.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              <span className="cinema-label">Perfil fictício selecionado</span>
+              <strong>
+                {role === 'aluno'
+                  ? data.students.find((s) => s.id === selectedStudent)?.name
+                  : data.profiles[role].name}
+              </strong>
+              <p>
+                {role === 'personal'
+                  ? 'Planeje, atribua e acompanhe os treinos.'
+                  : role === 'aluno'
+                    ? 'Execute seu treino e registre cada série.'
+                    : 'Explore os indicadores de operação.'}
+              </p>
+            </div>
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -311,91 +330,33 @@ export function LoginPage() {
               <Field label="Como podemos te chamar?" htmlFor="demo-name">
                 <Input
                   id="demo-name"
-                  placeholder="Seu nome fictício"
+                  placeholder={
+                    role === 'aluno'
+                      ? data.students.find((student) => student.id === selectedStudent)?.name
+                      : data.profiles[role].name
+                  }
+                  aria-describedby="demo-name-help"
                   autoComplete="off"
                   minLength={2}
-                  maxLength={80}
-                  required
+                  maxLength={100}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </Field>
-              <Field label="E-mail fictício" htmlFor="access-email">
-                <Input
-                  id="access-email"
-                  type="email"
-                  value={email}
-                  autoComplete="off"
-                  pattern="[^@]+@example\.com"
-                  title="Use um endereço fictício terminado em @example.com"
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </Field>
-              <Field label="Senha de exemplo (não editável)" htmlFor="access-password">
-                <div className="password-sample">
-                  <Input
-                    id="access-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value="demonstracao"
-                    readOnly
-                    aria-describedby="password-help"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    aria-label={
-                      showPassword ? 'Ocultar senha de exemplo' : 'Mostrar senha de exemplo'
-                    }
-                    onClick={() => setShowPassword((v) => !v)}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </Field>
-              <p id="password-help" className="entry-hint">
-                Amostra visual. Não informe uma senha real.
+              <p id="demo-name-help" className="entry-hint">
+                Opcional. Use um nome fictício ou continue com o perfil acima.
               </p>
-              <button
-                className="access-link"
-                type="button"
-                onClick={() => {
-                  setAccountFeedback('');
-                  setAccountMode('recover');
-                }}
-              >
-                Recuperar acesso · protótipo
-              </button>
               <Feedback error={error} />
               <Button className="entry-submit" type="submit" disabled={busy}>
                 {busy ? 'Preparando seu espaço…' : 'Entrar na demonstração'}
                 <ArrowUpRight size={18} />
               </Button>
-              <div className="access-options">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAccountFeedback('');
-                    setAccountMode('create');
-                  }}
-                >
-                  Criar conta · protótipo
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() =>
-                    void start(role, role === 'personal' ? 'Alex Personal' : 'Alex Atleta')
-                  }
-                >
-                  Experimentar sem preencher
-                </button>
-              </div>
             </form>
             <div className="entry-security">
-              <ShieldCheck size={17} />
+              <Info size={17} />
               <p>
-                Experiência demonstrativa, sem autenticação real. Os dados reiniciam ao sair ou
-                recarregar.
+                Dados fictícios locais, sem armazenamento seguro. Troque de perfil para acompanhar o
+                mesmo treino. Sair encerra a visualização; os registros permanecem neste navegador.
               </p>
             </div>
             <button
@@ -444,72 +405,6 @@ export function LoginPage() {
           )}
         </div>
       </section>
-      <Dialog
-        open={accountMode !== null}
-        onOpenChange={(open) => {
-          if (!open) setAccountMode(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {accountMode === 'recover'
-                ? 'Recuperar acesso demonstrativo'
-                : 'Criar perfil demonstrativo'}
-            </DialogTitle>
-            <DialogDescription>
-              Fluxo somente local. Não há conta real, armazenamento de senha ou envio de e-mail.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            className="form-stack"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (accountMode === 'recover')
-                setAccountFeedback(
-                  'Nenhum e-mail foi enviado. Você pode acessar a experiência pelo botão de demonstração.',
-                );
-              else {
-                const values = new FormData(event.currentTarget);
-                void start(
-                  role,
-                  String(values.get('displayName')),
-                  undefined,
-                  String(values.get('email')),
-                );
-              }
-            }}
-          >
-            {accountMode === 'create' && (
-              <Field label="Nome fictício do perfil" htmlFor="new-display-name">
-                <Input
-                  id="new-display-name"
-                  name="displayName"
-                  required
-                  minLength={2}
-                  maxLength={80}
-                />
-              </Field>
-            )}
-            <Field label="E-mail de exemplo" htmlFor="account-email">
-              <Input
-                id="account-email"
-                name="email"
-                type="email"
-                defaultValue="demo@example.com"
-                pattern="[^@]+@example\.com"
-                required
-              />
-            </Field>
-            <Feedback success={accountFeedback} />
-            <Button type="submit" disabled={busy}>
-              {accountMode === 'recover'
-                ? 'Visualizar orientação de acesso'
-                : 'Criar e abrir demonstração'}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
       <section id="beneficios" className="cinema-section benefits">
         <div className="chapter-heading">
           <p className="cinema-label">02 — O dia do personal</p>
@@ -586,7 +481,9 @@ export function LoginPage() {
               <span>60 s</span>
             </div>
             <Button
-              onClick={() => void start('personal', 'Alex Personal', '/personal/treinos/novo')}
+              onClick={() =>
+                void start('personal', data.profiles.personal.name, '/personal/treinos/novo')
+              }
             >
               Montar minha ficha
               <ArrowUpRight size={16} />
@@ -641,7 +538,7 @@ export function LoginPage() {
             <Check size={18} />
           </div>
           <p className="specimen-context">Último registro: 20 kg · descanso prescrito: 60 s</p>
-          <Button onClick={() => void start('aluno', 'Alex Atleta', '/aluno/treinos/treino-a')}>
+          <Button onClick={() => void start('aluno', '', '/aluno/treinos/treino-a')}>
             Experimentar o treino <ArrowUpRight size={16} />
           </Button>
         </div>
@@ -696,7 +593,7 @@ export function LoginPage() {
           </article>
         </div>
         <p className="form-help">
-          Na demonstração, os registros ficam em memória e reiniciam ao sair.
+          Na demonstração, os registros ficam neste navegador. Sair encerra apenas a visualização.
         </p>
       </section>
       <section className="cinema-section entry-finale">

@@ -24,7 +24,13 @@ import {
 import { DEMO_DATE, type Appointment } from '@/domain/types';
 import { errorMessage } from '@/domain/schemas';
 import { formatDate } from '@/domain/selectors';
-function CancelAppointment({ appointment }: { appointment: Appointment }) {
+function CancelAppointment({
+  appointment,
+  onCancelled,
+}: {
+  appointment: Appointment;
+  onCancelled: () => void;
+}) {
   const repository = useRepository();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
@@ -57,6 +63,7 @@ function CancelAppointment({ appointment }: { appointment: Appointment }) {
               try {
                 await repository.cancelAppointment(appointment.id);
                 setOpen(false);
+                onCancelled();
               } catch (e) {
                 setError(errorMessage(e));
               } finally {
@@ -254,7 +261,16 @@ export function AgendaPage() {
                     </p>
                   </div>
                 </div>
-                {a.status === 'Agendado' && <CancelAppointment appointment={a} />}
+                {a.status === 'Agendado' && (
+                  <CancelAppointment
+                    appointment={a}
+                    onCancelled={() =>
+                      setSuccess(
+                        'Encontro cancelado nesta demonstração. O horário está livre novamente.',
+                      )
+                    }
+                  />
+                )}
               </div>
             );
           })

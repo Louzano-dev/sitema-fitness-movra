@@ -46,9 +46,14 @@ try {
     await page.locator('.entry-finale').scrollIntoViewIfNeeded();
     await page.getByRole('button', { name: 'Experimentar a MOVRA' }).click();
     await page.getByRole('button', { name: 'Aluno / atleta', exact: true }).click();
-    await page.getByRole('button', { name: 'Experimentar sem preencher' }).click();
+    await page.getByRole('button', { name: 'Entrar na demonstração' }).click();
     await page.getByRole('link', { name: 'Começar meu treino' }).click();
     await page.screenshot({ path: path.join(output, `workout-${width}.png`) });
+    if (width === 360) {
+      await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
+      await page.screenshot({ path: path.join(output, 'mobile-menu.png') });
+      await page.keyboard.press('Escape');
+    }
     observations.push({ ...layout, errors, external });
     await context.close();
   }
@@ -59,7 +64,8 @@ try {
   });
   const page = await context.newPage();
   await page.goto(pathToFileURL(path.resolve(root, '../index.html')).href + '#/entrar');
-  await page.getByRole('button', { name: 'Experimentar sem preencher' }).click();
+  await page.getByRole('button', { name: 'Entrar na demonstração' }).click();
+  await page.screenshot({ path: path.join(output, 'personal-dashboard.png') });
   await page.getByRole('link', { name: 'Alunos', exact: true }).click();
   await page.getByLabel('Buscar aluno').fill('sem-resultados-000');
   await expect(page.getByRole('heading', { name: 'Nenhum resultado por aqui.' })).toBeVisible();

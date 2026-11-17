@@ -1,4 +1,5 @@
 'use client';
+import { useDemoSession } from '@/components/demo-session';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useGSAP } from '@gsap/react';
@@ -8,10 +9,11 @@ import { useDemo, useRepository } from '@/components/providers';
 import { EmptyState, Feedback, Field, PageHeader, Panel } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { errorMessage } from '@/domain/schemas';
 import type { SetLog } from '@/domain/types';
-import { STUDENT_ID } from '@/domain/types';
-import { formatDate } from '@/domain/selectors';
+import { formatDate, sessionVolume } from '@/domain/selectors';
+import { motion } from '@/components/motion';
 gsap.registerPlugin(useGSAP);
 function SessionProgress({ value, max }: { value: number; max: number }) {
   const scope = useRef<HTMLDivElement>(null);
@@ -24,7 +26,7 @@ function SessionProgress({ value, max }: { value: number; max: number }) {
         gsap.fromTo(
           '.progress-fill',
           { scaleX: previous.current },
-          { scaleX: fraction, duration: 0.24, ease: 'power2.out' },
+          { scaleX: fraction, duration: motion.surface, ease: motion.ease },
         );
       });
       media.add('(prefers-reduced-motion: reduce)', () => {
@@ -64,7 +66,7 @@ function RestTimer({
   autoStart?: boolean;
 }) {
   const [seconds, setSeconds] = useState(duration);
-  const [running, setRunning] = useState(autoStart);
+  const [running, setRunning] = useState(autoStart && duration > 0);
   const deadline = useRef(0);
   useEffect(() => {
     if (!running) return;
@@ -73,13 +75,13 @@ function RestTimer({
       const remaining = Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000));
       setSeconds(remaining);
       if (!remaining) setRunning(false);
-    }, 250);
+    }, 1000);
     return () => clearInterval(interval);
   }, [running, duration]);
   return (
-    <div className="timer">
+    <div className="timer" data-running={running}>
       <p>Descanso opcional</p>
-      <strong role="timer" aria-live="off">
+      <strong role="timer" aria-label="Tempo de descanso" aria-live="off">
         {String(Math.floor(seconds / 60)).padStart(2, '0')}:{String(seconds % 60).padStart(2, '0')}
       </strong>
       <div className="timer-actions">
@@ -89,8 +91,10 @@ function RestTimer({
           type="button"
           aria-label={running ? 'Pausar descanso' : `Iniciar descanso de ${duration} segundos`}
           onClick={() => {
-            if (running) setRunning(false);
-            else {
+            if (running) {
+              setSeconds(Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)));
+              setRunning(false);
+            } else {
               const next = seconds || duration;
               setSeconds(next);
               deadline.current = Date.now() + next * 1000;
@@ -99,6 +103,22 @@ function RestTimer({
           }}
         >
           {running ? <Pause size={14} /> : <Play size={14} />} {running ? 'Pausar' : 'Iniciar'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          aria-label="Adicionar 15 segundos de descanso"
+          disabled={!seconds}
+          onClick={() => {
+            const next =
+              (running ? Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)) : seconds) +
+              15;
+            setSeconds(next);
+            deadline.current = Date.now() + next * 1000;
+          }}
+        >
+          +15 s
         </Button>
         <Button
           variant="ghost"
@@ -120,17 +140,30 @@ function RestTimer({
   );
 }
 export function WorkoutSessionPage({ id }: { id: string }) {
+  const { studentId: activeStudentId } = useDemoSession();
   const data = useDemo();
   const repository = useRepository();
-  const workout = data.workouts.find((w) => w.id === id && w.studentId === STUDENT_ID);
+  const workout = data.workouts.find((w) => w.id === id && w.studentId === activeStudentId);
   const [error, setError] = useState('');
+  const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState(false);
   const [sessionId, setSessionId] = useState<string>();
+  const [paused, setPaused] = useState(false);
+  const pausedAt = useRef(0);
+  const pausedTime = useRef(0);
+  const [note, setNote] = useState('');
   const [rest, setRest] = useState({ duration: 60, version: 0 });
   const start = useRef<number | null>(null);
   useEffect(() => {
     start.current = Date.now();
   }, []);
+  useEffect(() => {
+    if (sessionId) {
+      const heading = document.querySelector<HTMLElement>('.completion h2');
+      heading?.setAttribute('tabindex', '-1');
+      heading?.focus();
+    }
+  }, [sessionId]);
   if (!workout)
     return (
       <EmptyState
@@ -158,11 +191,27 @@ export function WorkoutSessionPage({ id }: { id: string }) {
   const updateSet = (exerciseId: string, set: number, patch: Partial<SetLog>) => {
     repository.saveDraft(
       id,
-      sets.map((s) => (s.exerciseId === exerciseId && s.set === set ? { ...s, ...patch } : s)),
+      sets.map((s) =>
+        s.exerciseId === exerciseId && s.set === set
+          ? {
+              ...s,
+              ...patch,
+              ...(patch.kg !== undefined || patch.reps !== undefined ? { done: false } : {}),
+            }
+          : s,
+      ),
     );
     setError('');
   };
   const result = data.sessions.find((s) => s.id === sessionId);
+  const priorSession = result
+    ? data.sessions.find(
+        (session) =>
+          session.id !== result.id &&
+          session.studentId === activeStudentId &&
+          session.workoutId === result.workoutId,
+      )
+    : undefined;
   if (result)
     return (
       <>
@@ -183,6 +232,35 @@ export function WorkoutSessionPage({ id }: { id: string }) {
                 <Link href="/aluno">Voltar ao início</Link>
               </Button>
             </div>
+            <p>
+              {new Set(result.sets.map((set) => set.exerciseId)).size} exercícios concluídos ·
+              versão {result.versionId ?? 'ficha demonstrativa original'}
+            </p>
+            <p className="form-help">
+              Volume registrado: {sessionVolume(result.sets).toLocaleString('pt-BR')} kg·repetições.
+              {priorSession
+                ? ` Registro anterior desta ficha em ${formatDate(priorSession.date)}: ${sessionVolume(priorSession.sets).toLocaleString('pt-BR')} kg·repetições, ${priorSession.sets.length} séries e ${priorSession.duration} min.`
+                : ' Primeiro registro desta ficha/versão; ainda não há sessão anterior para comparar.'}{' '}
+              Soma descritiva de carga × repetições, sem avaliação clínica ou pontuação.
+            </p>
+            <Field label="Feedback ao personal (opcional)" htmlFor="session-feedback">
+              <Textarea
+                id="session-feedback"
+                maxLength={500}
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </Field>
+            <Button
+              variant="outline"
+              onClick={() => {
+                repository.saveSessionNote(result.id, note, activeStudentId);
+                setFeedback('Feedback registrado nesta sessão fictícia.');
+              }}
+            >
+              Salvar feedback da sessão
+            </Button>
+            <Feedback success={feedback} />
           </div>
         </Panel>
       </>
@@ -201,144 +279,243 @@ export function WorkoutSessionPage({ id }: { id: string }) {
           'Registre a carga e as repetições executadas. Zero kg representa uma execução sem carga externa.'
         }
       />
+      <div className="form-actions">
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (paused) {
+              pausedTime.current += Date.now() - pausedAt.current;
+              setPaused(false);
+            } else {
+              pausedAt.current = Date.now();
+              setPaused(true);
+            }
+          }}
+        >
+          {paused ? 'Retomar sessão' : 'Pausar sessão'}
+        </Button>
+        <span role="status">
+          {paused
+            ? 'Registro pausado; tempo de execução suspenso. O descanso é independente.'
+            : 'Registre as séries no seu ritmo.'}
+        </span>
+      </div>
       <div className="workout-session-layout">
-        <Panel>
-          {workout.exercises.map((prescription, index) => {
-            const exercise = data.exercises.find((e) => e.id === prescription.exerciseId)!;
-            return (
-              <section
-                className="session-exercise"
-                key={exercise.id}
-                id={`session-${exercise.id}`}
-                tabIndex={-1}
-              >
-                <div className="session-exercise-heading">
-                  <span>{String(index + 1).padStart(2, '0')}</span>
-                  <div>
-                    <h2>{exercise.name}</h2>
-                    <p>
-                      {prescription.sets} séries × {prescription.reps} reps · descanso prescrito{' '}
-                      {prescription.rest}s
-                    </p>
-                  </div>
-                </div>
-                <p className="form-help mb-4">{exercise.instructions}</p>
-                {(() => {
-                  const previous = [...data.sessions]
-                    .filter((s) => s.studentId === STUDENT_ID)
-                    .sort((a, b) => b.date.localeCompare(a.date))
-                    .find((s) => s.sets.some((log) => log.exerciseId === exercise.id));
-                  const last = previous?.sets.find((log) => log.exerciseId === exercise.id);
-                  return (
-                    last && (
-                      <p className="previous-load">
-                        Último registro:{' '}
-                        <strong>
-                          {last.kg} kg × {last.reps} reps
-                        </strong>{' '}
-                        · {formatDate(previous!.date)}
-                      </p>
-                    )
-                  );
-                })()}
-                {sets
-                  .filter((s) => s.exerciseId === exercise.id)
-                  .map((log) => (
-                    <div
-                      className={`set-row ${log.done ? 'set-complete' : ''}`}
-                      key={`${log.exerciseId}-${log.set}`}
-                    >
-                      <span className="set-number">Série {log.set}</span>
-                      <Field label="Carga (kg)" htmlFor={`kg-${exercise.id}-${log.set}`}>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="any"
-                          inputMode="decimal"
-                          id={`kg-${exercise.id}-${log.set}`}
-                          aria-label={`Carga em kg, ${exercise.name}, série ${log.set}`}
-                          value={Number.isFinite(log.kg) ? log.kg : ''}
-                          onChange={(event) =>
-                            updateSet(exercise.id, log.set, {
-                              kg: event.target.value === '' ? NaN : Number(event.target.value),
-                            })
-                          }
-                        />
-                      </Field>
-                      <Field label="Repetições" htmlFor={`reps-${exercise.id}-${log.set}`}>
-                        <Input
-                          type="number"
-                          min={1}
-                          step={1}
-                          inputMode="numeric"
-                          id={`reps-${exercise.id}-${log.set}`}
-                          aria-label={`Repetições, ${exercise.name}, série ${log.set}`}
-                          value={Number.isFinite(log.reps) ? log.reps : ''}
-                          onChange={(event) =>
-                            updateSet(exercise.id, log.set, {
-                              reps: event.target.value === '' ? NaN : Number(event.target.value),
-                            })
-                          }
-                        />
-                      </Field>
-                      <label className="set-check">
-                        <input
-                          type="checkbox"
-                          checked={log.done}
-                          aria-label={`Concluir ${exercise.name}, série ${log.set}`}
-                          onChange={(event) =>
-                            updateSet(exercise.id, log.set, { done: event.target.checked })
-                          }
-                        />
-                      </label>
-                    </div>
-                  ))}
-                <div className="exercise-flow-actions">
-                  <Button
-                    variant="outline"
-                    type="button"
-                    onClick={() =>
-                      setRest((v) => ({ duration: prescription.rest, version: v.version + 1 }))
-                    }
-                  >
-                    Descansar {prescription.rest}s
-                  </Button>
-                  {workout.exercises[index + 1] && (
-                    <Button
-                      variant="ghost"
-                      type="button"
-                      onClick={() => {
-                        const next = document.getElementById(
-                          `session-${workout.exercises[index + 1].exerciseId}`,
-                        );
-                        next?.focus({ preventScroll: true });
-                        next?.scrollIntoView({
-                          block: 'start',
-                          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                            ? 'auto'
-                            : 'smooth',
-                        });
-                      }}
-                    >
-                      Próximo exercício
-                    </Button>
-                  )}
-                </div>
-              </section>
-            );
-          })}
-        </Panel>
-        <Panel className="session-summary">
-          <h2>No seu ritmo.</h2>
-          <p className="mb-5">Confira os valores e marque cada série que você executou.</p>
+        <div className="session-timer-dock">
           <SessionProgress value={completed} max={sets.length} />
           <p className="sr-only" role="status">
             {completed} de {sets.length} séries concluídas.
           </p>
           <RestTimer key={rest.version} duration={rest.duration} autoStart={rest.version > 0} />
-          <Feedback error={error} />
+        </div>
+        <Panel className="session-exercises">
+          <fieldset disabled={paused}>
+            {workout.exercises.map((prescription, index) => {
+              const exercise = data.exercises.find((e) => e.id === prescription.exerciseId)!;
+              return (
+                <section
+                  className="session-exercise"
+                  key={exercise.id}
+                  id={`session-${exercise.id}`}
+                  tabIndex={-1}
+                >
+                  <div className="session-exercise-heading">
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <div>
+                      <h2>{exercise.name}</h2>
+                      <p>
+                        {prescription.sets} séries × {prescription.reps}
+                        {prescription.repsMax ? `–${prescription.repsMax}` : ''} reps · descanso
+                        prescrito {prescription.rest}s
+                      </p>
+                    </div>
+                  </div>
+                  <p className="form-help mb-4">{exercise.instructions}</p>
+                  {prescription.notes && <p className="form-help">{prescription.notes}</p>}
+                  {(() => {
+                    const previous = [...data.sessions]
+                      .filter((s) => s.studentId === activeStudentId)
+                      .sort((a, b) => b.date.localeCompare(a.date))
+                      .find((s) =>
+                        s.sets.some(
+                          (log) => log.exerciseId.split('--')[0] === exercise.id.split('--')[0],
+                        ),
+                      );
+                    const last = previous?.sets.find(
+                      (log) => log.exerciseId.split('--')[0] === exercise.id.split('--')[0],
+                    );
+                    return (
+                      last && (
+                        <p className="previous-load">
+                          Último registro:{' '}
+                          <strong>
+                            {last.kg} kg × {last.reps} reps
+                          </strong>{' '}
+                          · {formatDate(previous!.date)}
+                        </p>
+                      )
+                    );
+                  })()}
+                  {sets
+                    .filter((s) => s.exerciseId === exercise.id)
+                    .map((log) => (
+                      <div
+                        className={`set-row ${log.done ? 'set-complete' : ''}`}
+                        key={`${log.exerciseId}-${log.set}`}
+                      >
+                        <span className="set-number">Série {log.set}</span>
+                        <Field
+                          label="Carga (kg)"
+                          htmlFor={`kg-${exercise.id}-${log.set}`}
+                          error={
+                            !Number.isFinite(log.kg) || log.kg < 0 || log.kg > 1000
+                              ? 'Use de 0 a 1.000 kg.'
+                              : undefined
+                          }
+                        >
+                          <Input
+                            type="number"
+                            min={0}
+                            max={1000}
+                            step="any"
+                            inputMode="decimal"
+                            id={`kg-${exercise.id}-${log.set}`}
+                            aria-label={`Carga em kg, ${exercise.name}, série ${log.set}`}
+                            value={Number.isFinite(log.kg) ? log.kg : ''}
+                            onChange={(event) =>
+                              updateSet(exercise.id, log.set, {
+                                kg: event.target.value === '' ? NaN : Number(event.target.value),
+                              })
+                            }
+                          />
+                        </Field>
+                        <Field
+                          label="Repetições"
+                          htmlFor={`reps-${exercise.id}-${log.set}`}
+                          error={
+                            !Number.isInteger(log.reps) || log.reps < 1 || log.reps > 100
+                              ? 'Use de 1 a 100 reps.'
+                              : undefined
+                          }
+                        >
+                          <Input
+                            type="number"
+                            min={1}
+                            max={100}
+                            step={1}
+                            inputMode="numeric"
+                            id={`reps-${exercise.id}-${log.set}`}
+                            aria-label={`Repetições, ${exercise.name}, série ${log.set}`}
+                            value={Number.isFinite(log.reps) ? log.reps : ''}
+                            onChange={(event) =>
+                              updateSet(exercise.id, log.set, {
+                                reps: event.target.value === '' ? NaN : Number(event.target.value),
+                              })
+                            }
+                          />
+                        </Field>
+                        <label className="set-check">
+                          <input
+                            type="checkbox"
+                            checked={log.done}
+                            aria-label={`Concluir ${exercise.name}, série ${log.set}`}
+                            onChange={(event) => {
+                              if (
+                                event.target.checked &&
+                                (!Number.isFinite(log.kg) ||
+                                  log.kg < 0 ||
+                                  log.kg > 1000 ||
+                                  !Number.isInteger(log.reps) ||
+                                  log.reps < 1 ||
+                                  log.reps > 100)
+                              ) {
+                                setError(
+                                  'Revise a carga e as repetições antes de concluir esta série.',
+                                );
+                                document.getElementById(`kg-${exercise.id}-${log.set}`)?.focus();
+                                return;
+                              }
+                              updateSet(exercise.id, log.set, { done: event.target.checked });
+                            }}
+                          />
+                          <span className="sr-only">Concluir série {log.set}</span>
+                        </label>
+                      </div>
+                    ))}
+                  <div className="exercise-flow-actions">
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={() => {
+                        const first = sets.find((s) => s.exerciseId === exercise.id);
+                        if (
+                          !first ||
+                          !Number.isFinite(first.kg) ||
+                          first.kg < 0 ||
+                          first.kg > 1000 ||
+                          !Number.isInteger(first.reps) ||
+                          first.reps < 1 ||
+                          first.reps > 100
+                        ) {
+                          setError('Preencha valores válidos na primeira série para repetir.');
+                          return;
+                        }
+                        repository.saveDraft(
+                          id,
+                          sets.map((s) =>
+                            s.exerciseId === exercise.id && s.set > 1 && !s.done
+                              ? { ...s, kg: first.kg, reps: first.reps }
+                              : s,
+                          ),
+                        );
+                        setFeedback(
+                          `Valores da primeira série repetidos nas séries em aberto de ${exercise.name}.`,
+                        );
+                      }}
+                    >
+                      Repetir primeira série
+                    </Button>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() =>
+                        setRest((v) => ({ duration: prescription.rest, version: v.version + 1 }))
+                      }
+                    >
+                      Descansar {prescription.rest}s
+                    </Button>
+                    {workout.exercises[index + 1] && (
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        onClick={() => {
+                          const next = document.getElementById(
+                            `session-${workout.exercises[index + 1].exerciseId}`,
+                          );
+                          next?.focus({ preventScroll: true });
+                          next?.scrollIntoView({
+                            block: 'start',
+                            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                              ? 'auto'
+                              : 'smooth',
+                          });
+                        }}
+                      >
+                        Próximo exercício
+                      </Button>
+                    )}
+                  </div>
+                </section>
+              );
+            })}
+          </fieldset>
+        </Panel>
+        <Panel className="session-summary">
+          <h2>No seu ritmo.</h2>
+          <p className="mb-5">Confira os valores e marque cada série que você executou.</p>
+          <Feedback error={error} success={feedback} />
           <Button
-            disabled={busy}
+            disabled={busy || paused}
             onClick={async () => {
               setBusy(true);
               setError('');
@@ -346,7 +523,8 @@ export function WorkoutSessionPage({ id }: { id: string }) {
                 if (!data.drafts[id]) repository.saveDraft(id, sets);
                 const resultId = await repository.finishWorkout(
                   id,
-                  (Date.now() - (start.current ?? Date.now())) / 60000,
+                  (Date.now() - (start.current ?? Date.now()) - pausedTime.current) / 60000,
+                  activeStudentId,
                 );
                 setSessionId(resultId);
               } catch (e) {
@@ -359,7 +537,8 @@ export function WorkoutSessionPage({ id }: { id: string }) {
             {busy ? 'Registrando…' : 'Concluir treino'}
           </Button>
           <p className="form-help mt-4">
-            As séries em aberto ficam em memória durante a navegação. Recarregar reinicia os dados.
+            Séries válidas são salvas localmente quando o navegador permite. Recarregar encerra a
+            visualização, mas mantém o rascunho salvo.
           </p>
         </Panel>
       </div>

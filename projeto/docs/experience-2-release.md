@@ -1,5 +1,7 @@
 # MOVRA · entrega frontend 2.0
 
+> Registro da entrega anterior. O [sprint de refinamento](premium-sprint.md) remove os elementos de conta da entrada e passa a preservar dados ao trocar perfil. Sair continua restaurando os exemplos.
+
 ## Uso e preservação
 
 Abra `../../index.html` diretamente no navegador. Continua independente de servidor, internet e npm, inclusive quando copiado sozinho para outra pasta. Na raiz permanecem somente `index.html` e `projeto/`. Fontes React/Next.js, componentes, mock, design e ferramentas permanecem em `projeto/`; a exportação usa esses mesmos componentes. A referência histórica foi preservada.

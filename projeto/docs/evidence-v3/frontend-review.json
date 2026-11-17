@@ -1,0 +1,70 @@
+{
+  "contract": "Preservar MOVRA, landing cinematográfica e index.html independente. Implementar Studio determinístico revisável, Fuel informativo, identidade por aluno, persistência local e consentimento revogável, sem backend, autenticação, pagamentos ou IA.",
+  "targetViewports": ["360x900", "768x900", "1280x900", "1920x900"],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Playwright/axe WCAG A/AA nas páginas auditadas, Studio inicial/questionário, Fuel e execução. Testes de teclado/foco e redução de movimento; diálogos Radix e quantidade com foco após seleção. Não é certificação WCAG integral."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "observations.json: zero overflow de documento, exceções ou requisições HTTP nas quatro larguras. Capturas inspecionadas do Studio, questionário, editor, diálogo alimentar e refeição; fluxos E2E em 390 e 1280 px."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "not-applicable",
+      "reason": "Os novos módulos usam serviços locais síncronos. Não existe carregamento remoto; não foi adicionada latência falsa. A aplicação mantém fallback de entrada, estado de ação pendente e tratamento de erro existente."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "studio-home-1280.png apresenta Minhas fichas vazio com ação funcional. Fuel inicia sem refeições e o E2E confirma redefinição sem itens. Biblioteca e busca mostram ausência de resultados."
+    },
+    "error": {
+      "status": "pass",
+      "evidence": "Testes cobrem recusa de aprovação sem revisão, contexto especial sem geração automática, conversão de unidade sem tabela e armazenamento corrompido/negado. Erros permanecem textuais, sem substituir o formulário."
+    },
+    "partial": {
+      "status": "pass",
+      "evidence": "E2E de alimento personalizado omite nutrientes e verifica o aviso Estimativa parcial; testes de domínio mantêm null em vez de zero confirmado."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Fluxos verificam aprovação/atribuição, execução e histórico após nova versão, cálculo proporcional, edição/duplicação de refeições, persistência após reload e redefinição explícita."
+    },
+    "permission": {
+      "status": "pass",
+      "evidence": "E2E separa diário de Ana/Bruno, consulta do Personal somente após consentimento e remoção ao revogar. Menor Clara sem calorias numéricas. Guardas locais de sessão não são apresentadas como segurança de produção."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "360x900",
+      "artifact": "fuel-food-dialog-360.png",
+      "observation": "Após selecionar alimento, resumo compacto e origem recolhida deixam quantidade e salvar na área principal. Foco visível e fonte de 16 px."
+    },
+    {
+      "viewport": "768x900",
+      "artifact": "studio-questionnaire-768.png",
+      "observation": "Seis etapas identificadas, campos em duas colunas e menu compacto. Sem overflow horizontal."
+    },
+    {
+      "viewport": "1280x900",
+      "artifact": "studio-home-1280.png",
+      "observation": "Lateral MOVRA, orientação em verde profundo, ações de criação e estado vazio de fichas com hierarquia legível."
+    },
+    {
+      "viewport": "1920x900",
+      "artifact": "studio-editor-1920.png",
+      "observation": "Editor distribui dias e exercícios em duas regiões com controles e parâmetros legíveis, sem alargar indefinidamente o conteúdo."
+    },
+    {
+      "viewport": "360x900",
+      "artifact": "studio-editor-360.png",
+      "observation": "Dias em controles compactos, parâmetros empilhados e ações com quebra de linha; navegação por menu."
+    },
+    {
+      "viewport": "1280x900",
+      "artifact": "fuel-meal-1280.png",
+      "observation": "Refeição distingue quantidades, nutrientes estimados e ações de editar, duplicar e excluir; consentimento permanece separado."
+    }
+  ]
+}

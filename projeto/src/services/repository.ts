@@ -6,6 +6,14 @@ import type {
 } from '@/domain/schemas';
 import type { DemoState, Environment, Plan, Profile, SetLog } from '@/domain/types';
 export interface MovraRepository {
+  attachStorage(storage?: Pick<Storage, 'getItem' | 'setItem'>): void;
+  updateExperience(
+    update: (
+      state: import('@/domain/experience').ExperienceState,
+    ) => import('@/domain/experience').ExperienceState,
+  ): void;
+  assignProgram(programId: string): Promise<string[]>;
+  saveSessionNote(sessionId: string, note: string, studentId: string): void;
   reset(): void;
   getSnapshot(): DemoState;
   subscribe(listener: () => void): () => void;
@@ -14,9 +22,14 @@ export interface MovraRepository {
   saveAppointment(input: AppointmentInput): Promise<void>;
   cancelAppointment(id: string): Promise<void>;
   saveMeasurement(input: MeasurementInput): Promise<void>;
-  saveProfile(role: Environment, input: Profile): Promise<void>;
+  saveProfile(role: Environment, input: Profile, studentId?: string): Promise<void>;
   savePlan(id: string, input: Omit<Plan, 'id'>): Promise<void>;
   updateOrganization(id: string, planId: string, status: 'Ativa' | 'Pausada'): Promise<void>;
   saveDraft(workoutId: string, sets: SetLog[]): void;
-  finishWorkout(workoutId: string, duration: number): Promise<string>;
+  finishWorkout(
+    workoutId: string,
+    duration: number,
+    studentId?: string,
+    note?: string,
+  ): Promise<string>;
 }

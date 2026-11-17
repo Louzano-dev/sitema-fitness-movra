@@ -1,4 +1,5 @@
 'use client';
+import { useDemoSession } from '@/components/demo-session';
 import { useState } from 'react';
 import { Controller, useController, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,10 +8,19 @@ import { Avatar, Feedback, Field, PageHeader, Panel } from '@/components/shared'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { profileSchema, errorMessage } from '@/domain/schemas';
 import type { Environment, Profile } from '@/domain/types';
 export function SettingsPage({ role }: { role: Environment }) {
   const data = useDemo();
+  const { studentId, leave } = useDemoSession();
   const repository = useRepository();
   const [success, setSuccess] = useState('');
   const {
@@ -42,6 +52,29 @@ export function SettingsPage({ role }: { role: Environment }) {
             notificação é enviado.
           </p>
           <p>Não há senha, sessão autenticada ou recuperação de conta nesta versão.</p>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">Redefinir dados demonstrativos</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Restaurar todos os exemplos?</DialogTitle>
+                <DialogDescription>
+                  Remove fichas, refeições e registros fictícios salvos neste navegador, de todos os
+                  perfis desta demonstração. Esta ação não pode ser desfeita.
+                </DialogDescription>
+              </DialogHeader>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  repository.reset();
+                  leave();
+                }}
+              >
+                Confirmar redefinição dos dados
+              </Button>
+            </DialogContent>
+          </Dialog>
         </aside>
         <Panel className="settings-card">
           <h2 className="mb-6">Informações do perfil</h2>
@@ -50,7 +83,7 @@ export function SettingsPage({ role }: { role: Environment }) {
             onSubmit={handleSubmit(async (input) => {
               setSuccess('');
               try {
-                await repository.saveProfile(role, input);
+                await repository.saveProfile(role, input, studentId);
                 reset(input);
                 setSuccess('Perfil atualizado nesta demonstração.');
               } catch (error) {

@@ -1,5 +1,9 @@
 'use client';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { motion } from './motion';
 import {
   Area,
   AreaChart,
@@ -14,6 +18,7 @@ import {
   YAxis,
 } from 'recharts';
 import { TableRegion } from './shared';
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 export interface ChartPoint {
   label: string;
   value: number;
@@ -30,6 +35,28 @@ export function TrendChart({
   kind?: 'area' | 'bar' | 'line';
 }) {
   const id = useId().replace(/:/g, '');
+  const scope = useRef<HTMLDivElement>(null);
+  const signature = JSON.stringify(data);
+  useGSAP(
+    () => {
+      const media = gsap.matchMedia();
+      media.add('(prefers-reduced-motion: no-preference)', () => {
+        gsap.fromTo(
+          '.chart',
+          { opacity: 0.65, y: 8 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: motion.entrance,
+            ease: motion.ease,
+            scrollTrigger: { trigger: scope.current, start: 'top 95%', once: true },
+          },
+        );
+      });
+      return () => media.revert();
+    },
+    { scope, dependencies: [signature, kind], revertOnUpdate: true },
+  );
   const children = (
     <>
       <CartesianGrid vertical={false} stroke="#E5E9E1" strokeDasharray="3 5" />
@@ -55,7 +82,7 @@ export function TrendChart({
     </>
   );
   return (
-    <div className="chart-block">
+    <div className="chart-block" ref={scope}>
       <div
         className="chart"
         role="img"

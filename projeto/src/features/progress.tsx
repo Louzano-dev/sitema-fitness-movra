@@ -1,4 +1,5 @@
 'use client';
+import { useDemoSession } from '@/components/demo-session';
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
@@ -22,7 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { TrendChart } from '@/components/charts';
-import { DEMO_DATE, STUDENT_ID } from '@/domain/types';
+import { DEMO_DATE } from '@/domain/types';
 import { errorMessage } from '@/domain/schemas';
 import { formatDate, studentMeasurements } from '@/domain/selectors';
 export function ProgressPage({
@@ -33,15 +34,16 @@ export function ProgressPage({
   initialStudent?: string;
 }) {
   const data = useDemo();
+  const { studentId: activeStudentId } = useDemoSession();
   const repository = useRepository();
-  const [student, setStudent] = useState(initialStudent ?? STUDENT_ID);
+  const [student, setStudent] = useState(initialStudent ?? activeStudentId);
   const [metric, setMetric] = useState<'weight' | 'waist'>('weight');
   const [period, setPeriod] = useState('all');
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
-  const id = studentView ? STUDENT_ID : student;
+  const id = studentView ? activeStudentId : student;
   const records = studentMeasurements(data, id);
   const visible = records.filter((m) => period === 'all' || m.date >= '2026-10-01');
   const last = records.at(-1);

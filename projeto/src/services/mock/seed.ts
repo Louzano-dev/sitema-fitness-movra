@@ -1,6 +1,9 @@
+import { emptyExperience } from '@/domain/experience';
+import { EXERCISES } from '@/domain/exercise-catalog';
 import type { DemoState } from '@/domain/types';
 export function createSeed(): DemoState {
   return {
+    experience: emptyExperience(),
     students: [
       {
         id: 'ana',
@@ -63,65 +66,7 @@ export function createSeed(): DemoState {
         color: 'sand',
       },
     ],
-    exercises: [
-      {
-        id: 'agachamento',
-        name: 'Agachamento livre',
-        group: 'Membros inferiores',
-        equipment: 'Barra',
-        instructions:
-          'Mantenha o movimento controlado e siga a amplitude orientada pelo seu personal.',
-      },
-      {
-        id: 'legpress',
-        name: 'Leg press 45°',
-        group: 'Membros inferiores',
-        equipment: 'Máquina',
-        instructions: 'Ajuste o banco e realize o movimento conforme orientação do personal.',
-      },
-      {
-        id: 'extensora',
-        name: 'Cadeira extensora',
-        group: 'Membros inferiores',
-        equipment: 'Máquina',
-        instructions: 'Mantenha o tronco apoiado e evite movimentos bruscos.',
-      },
-      {
-        id: 'remada',
-        name: 'Remada baixa',
-        group: 'Membros superiores',
-        equipment: 'Polia',
-        instructions: 'Controle a puxada e o retorno, com o tronco estável.',
-      },
-      {
-        id: 'supino',
-        name: 'Supino com halteres',
-        group: 'Membros superiores',
-        equipment: 'Halteres',
-        instructions: 'Siga a trajetória e a carga orientadas pelo personal.',
-      },
-      {
-        id: 'elevacao',
-        name: 'Elevação lateral',
-        group: 'Membros superiores',
-        equipment: 'Halteres',
-        instructions: 'Mantenha o movimento controlado, sem impulsionar o tronco.',
-      },
-      {
-        id: 'abdominal',
-        name: 'Abdominal no solo',
-        group: 'Core',
-        equipment: 'Colchonete',
-        instructions: 'Realize as repetições conforme a orientação individual recebida.',
-      },
-      {
-        id: 'ponte',
-        name: 'Ponte de glúteos',
-        group: 'Membros inferiores',
-        equipment: 'Colchonete',
-        instructions: 'Use apoio estável e mantenha o controle durante o movimento.',
-      },
-    ],
+    exercises: EXERCISES,
     workouts: [
       {
         id: 'treino-a',

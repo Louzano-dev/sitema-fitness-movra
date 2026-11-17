@@ -10,17 +10,40 @@ export const motion = {
   ease: 'power2.out',
 };
 gsap.registerPlugin(useGSAP);
-export function PageMotion({ children, route }: { children: ReactNode; route: string }) {
+export function PageMotion({
+  children,
+  route,
+  focusPage = true,
+}: {
+  children: ReactNode;
+  route: string;
+  focusPage?: boolean;
+}) {
   const scope = useRef<HTMLDivElement>(null);
   useGSAP(
     () => {
       const media = gsap.matchMedia();
       media.add('(prefers-reduced-motion: no-preference)', () => {
-        gsap.fromTo(scope.current, { y: 8 }, { y: 0, duration: motion.surface, ease: motion.ease });
+        gsap.fromTo(
+          scope.current,
+          { opacity: 0.85, y: 8 },
+          { opacity: 1, y: 0, duration: motion.surface, ease: motion.ease },
+        );
+        gsap.fromTo(
+          scope.current!.querySelectorAll('.stat,.welcome-banner,.student-welcome'),
+          { y: 8 },
+          { y: 0, stagger: 0.035, duration: motion.surface, ease: motion.ease },
+        );
       });
+      const heading = focusPage ? scope.current?.querySelector('h1') : null;
+      if (heading) {
+        heading.tabIndex = -1;
+        heading.focus({ preventScroll: true });
+      }
+      if (focusPage) window.scrollTo({ top: 0, behavior: 'instant' });
       return () => media.revert();
     },
-    { scope, dependencies: [route], revertOnUpdate: true },
+    { scope, dependencies: [route, focusPage], revertOnUpdate: true },
   );
   return (
     <div ref={scope} className="page-motion">

@@ -1,11 +1,25 @@
 'use client';
-import { createContext, useContext, useState, useSyncExternalStore, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
 import type { MovraRepository } from '@/services/repository';
 import { MockRepository } from '@/services/mock/repository';
 import { DemoSessionProvider } from './demo-session';
 const RepositoryContext = createContext<MovraRepository | null>(null);
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [repository] = useState(() => new MockRepository());
+  useEffect(() => {
+    try {
+      repository.attachStorage(window.localStorage);
+    } catch {
+      repository.attachStorage();
+    }
+  }, [repository]);
   return (
     <RepositoryContext value={repository}>
       <DemoSessionProvider repository={repository}>{children}</DemoSessionProvider>

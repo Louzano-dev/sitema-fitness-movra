@@ -18,6 +18,9 @@ export interface Exercise {
   instructions: string;
 }
 export interface Prescription {
+  repsMax?: number;
+  notes?: string;
+  rowId?: string;
   kg?: number;
   exerciseId: string;
   sets: number;
@@ -25,6 +28,9 @@ export interface Prescription {
   rest: number;
 }
 export interface Workout {
+  programId?: string;
+  versionId?: string;
+  weekday?: string;
   id: string;
   organizationId: string;
   studentId: string;
@@ -41,6 +47,8 @@ export interface SetLog {
   done: boolean;
 }
 export interface WorkoutSession {
+  versionId?: string;
+  note?: string;
   id: string;
   studentId: string;
   workoutId: string;
@@ -93,6 +101,8 @@ export interface Profile {
   notifications: boolean;
 }
 export interface DemoState {
+  experience: import('./experience').ExperienceState;
+  storageState?: 'memory' | 'local' | 'unavailable' | 'invalid';
   students: Student[];
   exercises: Exercise[];
   workouts: Workout[];

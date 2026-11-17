@@ -24,6 +24,8 @@ import {
   History,
   UserRound,
   House,
+  WandSparkles,
+  Apple,
 } from 'lucide-react';
 import { Brand } from './brand';
 import { Avatar } from './shared';
@@ -44,9 +46,11 @@ const navigation = {
     { href: '/personal', label: 'Visão geral', icon: LayoutDashboard },
     { href: '/personal/alunos', label: 'Alunos', icon: Users },
     { href: '/personal/treinos', label: 'Treinos', icon: ClipboardList },
+    { href: '/personal/studio', label: 'MOVRA Studio', icon: WandSparkles },
     { href: '/personal/exercicios', label: 'Exercícios', icon: BookOpen },
     { href: '/personal/evolucao', label: 'Evolução física', icon: ChartNoAxesCombined },
     { href: '/personal/agenda', label: 'Agenda', icon: CalendarDays },
+    { href: '/personal/alimentacao', label: 'Alimentação', icon: Apple },
     { href: '/personal/configuracoes', label: 'Configurações', icon: Settings2 },
   ],
   aluno: [
@@ -54,6 +58,8 @@ const navigation = {
     { href: '/aluno/treinos', label: 'Meus treinos', icon: ClipboardList },
     { href: '/aluno/historico', label: 'Histórico', icon: History },
     { href: '/aluno/evolucao', label: 'Evolução', icon: Activity },
+    { href: '/aluno/alimentacao', label: 'Alimentação', icon: Apple },
+    { href: '/aluno/agenda', label: 'Agenda', icon: CalendarDays },
     { href: '/aluno/perfil', label: 'Meu perfil', icon: UserRound },
   ],
   admin: [
@@ -67,10 +73,12 @@ const labels = { personal: 'Espaço do personal', aluno: 'Espaço do aluno', adm
 function AccountMenu({
   name,
   onLeave,
+  onSwitch,
   children,
 }: {
   name: string;
   onLeave: () => void;
+  onSwitch: () => void;
   children: ReactNode;
 }) {
   return (
@@ -80,11 +88,11 @@ function AccountMenu({
         <DialogHeader>
           <DialogTitle>{name}</DialogTitle>
           <DialogDescription>
-            Perfil demonstrativo · sem autenticação real. Sair ou trocar perfil limpa todas as
-            alterações desta sessão.
+            Perfil demonstrativo · sem autenticação real. Trocar perfil preserva os registros
+            locais. Sair encerra a visualização; os registros fictícios permanecem neste navegador.
           </DialogDescription>
         </DialogHeader>
-        <Button variant="outline" onClick={onLeave}>
+        <Button variant="outline" onClick={onSwitch}>
           Trocar perfil
         </Button>
         <Button onClick={onLeave}>Sair da demonstração</Button>
@@ -95,7 +103,7 @@ function AccountMenu({
 export function AppShell({ role, children }: { role: Environment; children: ReactNode }) {
   const path = usePathname();
   const router = useRouter();
-  const { session, leave } = useDemoSession();
+  const { session, leave, switchProfile } = useDemoSession();
   useEffect(() => {
     if (!session || session.role !== role) router.replace('/entrar');
   }, [session, role, router]);
@@ -112,6 +120,11 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
   const leaveAccount = () => {
     setMenuOpen(false);
     leave();
+    router.push('/entrar');
+  };
+  const changeProfile = (next?: Environment) => {
+    setMenuOpen(false);
+    switchProfile(next);
     router.push('/entrar');
   };
   const links = (
@@ -162,11 +175,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
           <select
             aria-label="Trocar ambiente demonstrativo"
             value={role}
-            onChange={() => {
-              setMenuOpen(false);
-              leave();
-              router.push('/entrar');
-            }}
+            onChange={(event) => changeProfile(event.target.value as Environment)}
           >
             <option value="personal">Personal trainer</option>
             <option value="aluno">Aluno / atleta</option>
@@ -175,7 +184,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
           <ChevronDown size={15} aria-hidden />
         </div>
         <p className="role-warning">Troca de visualização, sem autenticação.</p>
-        <AccountMenu name={profile.name} onLeave={leaveAccount}>
+        <AccountMenu name={profile.name} onLeave={leaveAccount} onSwitch={() => changeProfile()}>
           <button className="sidebar-profile account-trigger" aria-label="Abrir menu do usuário">
             <Avatar name={profile.name} />
             <div>
@@ -217,7 +226,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
                   <Menu />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="mobile-drawer">
+              <DialogContent className="mobile-drawer translate-x-0! translate-y-0!">
                 <DialogHeader className="sr-only">
                   <DialogTitle>Navegação MOVRA</DialogTitle>
                   <DialogDescription>
@@ -247,8 +256,8 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
                   <DialogTitle>Um espaço para experimentar.</DialogTitle>
                   <DialogDescription>
                     Todos os dados são fictícios. Você pode navegar, criar e editar registros
-                    locais. Recarregar reinicia as alterações. Sem autenticação, pagamentos, IA ou
-                    proteção de dados de produção.
+                    locais. Os registros persistem no navegador, sem armazenamento seguro. Sem
+                    autenticação, pagamentos, IA ou proteção de dados de produção.
                   </DialogDescription>
                 </DialogHeader>
                 <p className="muted small">
@@ -256,7 +265,11 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
                 </p>
               </DialogContent>
             </Dialog>
-            <AccountMenu name={profile.name} onLeave={leaveAccount}>
+            <AccountMenu
+              name={profile.name}
+              onLeave={leaveAccount}
+              onSwitch={() => changeProfile()}
+            >
               <Button variant="ghost" size="icon" aria-label={`Conta de ${profile.name}`}>
                 <Avatar name={profile.name} small />
               </Button>
@@ -264,7 +277,16 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
           </div>
         </header>
         <div className="demo-strip">
-          <span>Prévia funcional · dados em memória</span>
+          <span>
+            Prévia local ·{' '}
+            {data.storageState === 'local'
+              ? 'dados salvos no navegador'
+              : data.storageState === 'invalid'
+                ? 'armazenamento inválido; use redefinir dados'
+                : data.storageState === 'unavailable'
+                  ? 'sem persistência disponível'
+                  : 'iniciando armazenamento'}
+          </span>
           <span>
             12 nov 2026 <span className="desktop-only">· dia demonstrativo</span>
           </span>
@@ -274,13 +296,21 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
         </main>
         <footer className="workspace-footer">
           <span>MOVRA · Cada treino, um próximo passo.</span>
-          <span>Dados fictícios · recarregar reinicia a sessão</span>
+          <span>Dados fictícios locais · sessão sem autenticação</span>
         </footer>
       </div>
       {role === 'aluno' && (
         <nav className="student-bottom-nav" aria-label="Navegação rápida do aluno">
           {navigation.aluno
-            .filter((i) => i.href !== '/aluno/treinos')
+            .filter((i) =>
+              [
+                '/aluno',
+                '/aluno/treinos',
+                '/aluno/alimentacao',
+                '/aluno/evolucao',
+                '/aluno/perfil',
+              ].includes(i.href),
+            )
             .map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href} aria-current={path === href ? 'page' : undefined}>
                 <Icon size={21} aria-hidden />

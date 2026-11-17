@@ -46,6 +46,18 @@ export function WorkoutEditor({ id, initialStudent }: { id?: string; initialStud
   const exercises = useWatch({ control: form.control, name: 'exercises' });
   const values = { title, studentId, exercises };
   const errors = form.formState.errors;
+  if (current?.programId)
+    return (
+      <EmptyState
+        title="Ficha gerenciada pelo MOVRA Studio."
+        description="Para alterar esta ficha, crie e aprove uma nova versão no Studio. Sessões anteriores permanecem preservadas."
+        action={
+          <Button asChild>
+            <Link href="/personal/studio">Abrir editor versionado</Link>
+          </Button>
+        }
+      />
+    );
   if (id && !current)
     return (
       <EmptyState

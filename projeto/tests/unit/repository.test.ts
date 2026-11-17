@@ -24,6 +24,20 @@ function completeDraft(repository: MockRepository, workoutId = 'treino-a') {
   return sets;
 }
 describe('Consistência do repositório demonstrativo', () => {
+  it('mantém o responsável da organização consistente com o perfil do personal', async () => {
+    const repository = new MockRepository();
+    await repository.saveProfile('personal', {
+      ...repository.getSnapshot().profiles.personal,
+      name: 'Personal Exemplo',
+    });
+    expect(repository.getSnapshot().organizations.find((o) => o.id === 'org-1')?.owner).toBe(
+      'Personal Exemplo',
+    );
+    repository.reset();
+    expect(repository.getSnapshot().organizations.find((o) => o.id === 'org-1')?.owner).toBe(
+      repository.getSnapshot().profiles.personal.name,
+    );
+  });
   it('preserva a carga prescrita e rejeita carga inválida sem alterar a ficha', async () => {
     const repository = new MockRepository();
     const workout = repository.getSnapshot().workouts[0];

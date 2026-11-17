@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-17",
+  "node": "26.13.0",
+  "chrome": "157.0.8103.79",
+  "artifact": "root index.html",
+  "bytes": 7418219,
+  "sha256": "C3A2FD9382B83CBC87CE87403A11EBEA57FD6203395C13D03985E7DE408AEB68",
+  "build": "pass",
+  "typecheck": "pass",
+  "lint": "pass",
+  "unit": { "status": "pass", "files": 2, "tests": 46 },
+  "e2eNextProduction": { "status": "pass", "tests": 35, "minutes": 2.9 },
+  "e2ePortable": {
+    "status": "pass",
+    "tests": 35,
+    "minutes": 5.9,
+    "offline": true,
+    "isolatedHtmlCopy": true,
+    "server": false
+  },
+  "responsiveViewports": ["360x900", "768x900", "1280x900", "1920x900"],
+  "screenshots": 24,
+  "documentOverflow": false,
+  "pageErrors": [],
+  "runtimeHttpRequests": [],
+  "evidenceRecordCheck": "pass",
+  "motion": { "status": "pass", "sampleFrames": 179, "medianMs": 6.9, "p95Ms": 7.2, "framesAbove50Ms": 0, "longTasks": [], "cleanupCycles": 3 },
+  "caveat": "Chrome desktop/headless com viewports móveis. Axe e evidência estruturada não certificam conformidade WCAG integral; faltam dispositivos físicos e outros navegadores."
+}

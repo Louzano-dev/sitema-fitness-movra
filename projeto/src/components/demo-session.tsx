@@ -1,11 +1,14 @@
 'use client';
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import type { Environment } from '@/domain/types';
+import { STUDENT_ID, type Environment } from '@/domain/types';
 import type { MovraRepository } from '@/services/repository';
 type Session = { role: Environment; name: string };
 type SessionValue = {
   session: Session | null;
-  enter: (role: Environment, name: string, email?: string) => Promise<void>;
+  suggestedRole: Environment;
+  studentId: string;
+  switchProfile: (role?: Environment) => void;
+  enter: (role: Environment, name: string, email?: string, studentId?: string) => Promise<void>;
   leave: () => void;
 };
 const Context = createContext<SessionValue | null>(null);
@@ -17,23 +20,46 @@ export function DemoSessionProvider({
   repository: MovraRepository;
 }) {
   const [session, setSession] = useState<Session | null>(null);
-  async function enter(role: Environment, name: string, email?: string) {
+  const [studentId, setStudentId] = useState(STUDENT_ID);
+  const [suggestedRole, setSuggestedRole] = useState<Environment>('personal');
+  async function enter(role: Environment, name: string, email?: string, selectedId = studentId) {
     const clean = name.trim();
-    if (clean.length < 2 || clean.length > 80)
-      throw new Error('Use um nome fictício de 2 a 80 caracteres.');
-    repository.reset();
-    await repository.saveProfile(role, {
-      ...repository.getSnapshot().profiles[role],
-      name: clean,
-      email: email?.endsWith('@example.com') ? email : `${role}@example.com`,
-    });
+    if (clean.length < 2 || clean.length > 100)
+      throw new Error('Use um nome fictício de 2 a 100 caracteres.');
+    const selected = repository.getSnapshot().students.find((s) => s.id === selectedId);
+    if (role === 'aluno' && !selected) throw new Error('Aluno demonstrativo não encontrado.');
+    setStudentId(selectedId);
+    await repository.saveProfile(
+      role,
+      {
+        ...repository.getSnapshot().profiles[role],
+        name: clean,
+        email: email?.endsWith('@example.com')
+          ? email
+          : role === 'aluno'
+            ? selected!.email
+            : repository.getSnapshot().profiles[role].email,
+        specialty:
+          role === 'aluno' ? selected!.goal : repository.getSnapshot().profiles[role].specialty,
+      },
+      selectedId,
+    );
     setSession({ role, name: clean });
   }
   function leave() {
-    repository.reset();
+    setSession(null);
+    setStudentId(STUDENT_ID);
+    setSuggestedRole('personal');
+  }
+  function switchProfile(role: Environment = session?.role === 'personal' ? 'aluno' : 'personal') {
+    setSuggestedRole(role);
     setSession(null);
   }
-  return <Context value={{ session, enter, leave }}>{children}</Context>;
+  return (
+    <Context value={{ session, suggestedRole, studentId, enter, switchProfile, leave }}>
+      {children}
+    </Context>
+  );
 }
 export function useDemoSession() {
   const value = useContext(Context);
