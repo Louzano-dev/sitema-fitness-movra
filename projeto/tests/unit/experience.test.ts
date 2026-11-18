@@ -297,6 +297,23 @@ describe('Fuel · quantidades, origem e privacidade', () => {
   });
 });
 describe('Persistência local versionada', () => {
+  it('restaura uma ficha parcialmente preenchida com as séries já concluídas e o tempo ativo', () => {
+    const storage = memoryStorage();
+    const repository = new MockRepository();
+    repository.attachStorage(storage);
+    const sets = [
+      { exerciseId: 'remada', set: 1, kg: 10, reps: 8, done: true },
+      { exerciseId: 'remada', set: 2, kg: NaN, reps: 8, done: false },
+    ];
+    repository.saveDraft('treino-a', sets);
+    repository.saveWorkoutCheckpoint('treino-a', { elapsedMs: 12345, previousCardioIds: [] });
+    const next = new MockRepository();
+    next.attachStorage(storage);
+    expect(next.getSnapshot().drafts['treino-a']).toEqual(sets);
+    expect(next.getSnapshot().workoutCheckpoints?.['treino-a'].elapsedMs).toBe(12345);
+    next.reset();
+    expect(next.getSnapshot().workoutCheckpoints).toEqual({});
+  });
   it('restaura fichas, refeições e histórico em uma nova instância', async () => {
     const storage = memoryStorage();
     const repository = new MockRepository();

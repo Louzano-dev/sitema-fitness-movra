@@ -11,6 +11,8 @@ export interface Student {
   color: string;
 }
 export interface Exercise {
+  pattern?: string;
+  difficulty?: string;
   id: string;
   name: string;
   group: string;
@@ -18,6 +20,8 @@ export interface Exercise {
   instructions: string;
 }
 export interface Prescription {
+  rir?: number;
+  rpe?: number;
   repsMax?: number;
   notes?: string;
   rowId?: string;
@@ -101,6 +105,10 @@ export interface Profile {
   specialty: string;
   notifications: boolean;
 }
+export interface WorkoutCheckpoint {
+  elapsedMs: number;
+  previousCardioIds: string[];
+}
 export interface DemoState {
   experience: import('./experience').ExperienceState;
   storageState?: 'memory' | 'local' | 'unavailable' | 'invalid';
@@ -114,6 +122,7 @@ export interface DemoState {
   organizations: Organization[];
   subscriptions: Subscription[];
   profiles: Record<Environment, Profile>;
+  workoutCheckpoints?: Record<string, WorkoutCheckpoint>;
   drafts: Record<string, SetLog[]>;
 }
 export const DEMO_DATE = '2026-11-12';

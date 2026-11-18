@@ -22,11 +22,13 @@ import {
   type Plan,
   type Profile,
   type SetLog,
+  type WorkoutCheckpoint,
 } from '@/domain/types';
 import type { MovraRepository } from '../repository';
 import { createSeed } from './seed';
 import { experienceSchema, type ExperienceState } from '@/domain/experience';
 import { readLocal, writeLocal } from '../local-storage';
+import { deliverDay } from '@/domain/workout-delivery';
 import { EXERCISES } from '@/domain/exercise-catalog';
 
 // Adaptador de demonstração. Estas verificações garantem consistência local, não autorização.
@@ -38,6 +40,18 @@ export class MockRepository implements MovraRepository {
     this.state = structuredClone(seed);
   }
   getSnapshot = () => this.state;
+  saveOwnExercise(input: Omit<import('@/domain/types').Exercise, 'id'>) {
+    if (
+      !input.name.trim() ||
+      !input.group.trim() ||
+      !input.equipment.trim() ||
+      !input.instructions.trim()
+    )
+      throw Error('Preencha nome, grupo, equipamento e instruções de execução.');
+    const exercise = { ...input, id: 'own-' + this.id(), name: input.name.trim() };
+    this.commit({ exercises: [...this.state.exercises, exercise] });
+    return exercise.id;
+  }
   saveSessionNote(sessionId: string, note: string, studentId: string) {
     if (
       note.length > 500 ||
@@ -86,34 +100,15 @@ export class MockRepository implements MovraRepository {
     if (!snapshot || JSON.stringify(snapshot.days) !== JSON.stringify(program.days))
       throw new Error('A ficha mudou após aprovação. Revise novamente.');
     const exercises = [...this.state.exercises];
-    const workouts = program.days.map((day) => ({
-      id: this.id(),
-      organizationId: ORGANIZATION_ID,
-      studentId: program.studentId,
-      title: `${program.title} · ${day.name}`,
-      notes: day.instructions,
-      updatedAt: DEMO_DATE,
-      programId: program.id,
-      versionId: program.approvedVersion,
-      weekday: day.weekday,
-      cardio: structuredClone(day.cardio ?? []),
-      exercises: day.exercises.map((row) => {
-        const original = exercises.find((e) => e.id === row.exerciseId);
-        if (!original) throw new Error('Exercício não encontrado.');
-        const alias = `${original.id}--${program.approvedVersion}--${row.id}`;
-        exercises.push({ ...original, id: alias });
-        return {
-          exerciseId: alias,
-          sets: row.sets,
-          reps: row.reps,
-          repsMax: row.repsMax,
-          rest: row.rest,
-          kg: row.kg,
-          notes: row.notes,
-          rowId: row.id,
-        };
-      }),
-    }));
+    const workouts = snapshot.days.map((day) => {
+      const workout = deliverDay(snapshot, day, this.id());
+      for (const row of workout.exercises) {
+        const original = exercises.find((e) => e.id === row.exerciseId.split('--')[0]);
+        if (!original) throw Error('Exercício não encontrado.');
+        exercises.push({ ...original, id: row.exerciseId });
+      }
+      return workout;
+    });
     this.commit({
       exercises,
       workouts: [...workouts, ...this.state.workouts],
@@ -312,6 +307,11 @@ export class MockRepository implements MovraRepository {
       ),
     });
   }
+  saveWorkoutCheckpoint(workoutId: string, checkpoint: WorkoutCheckpoint) {
+    this.commit({
+      workoutCheckpoints: { ...this.state.workoutCheckpoints, [workoutId]: checkpoint },
+    });
+  }
   saveDraft(workoutId: string, sets: SetLog[]) {
     this.commit({ drafts: { ...this.state.drafts, [workoutId]: structuredClone(sets) } });
   }
@@ -354,7 +354,9 @@ export class MockRepository implements MovraRepository {
     };
     const drafts = { ...this.state.drafts };
     delete drafts[workoutId];
-    this.commit({ sessions: [session, ...this.state.sessions], drafts });
+    const workoutCheckpoints = { ...this.state.workoutCheckpoints };
+    delete workoutCheckpoints[workoutId];
+    this.commit({ sessions: [session, ...this.state.sessions], drafts, workoutCheckpoints });
     return id;
   }
 }

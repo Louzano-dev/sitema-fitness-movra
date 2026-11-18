@@ -73,6 +73,6 @@ test('Movimento reduzido e navegação móvel por teclado', async ({ page }) => 
   await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
   await page.getByRole('dialog').getByRole('link', { name: 'MOVRA Studio', exact: true }).focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('main')).toContainText('Um plano. Muitas possibilidades.');
+  await expect(page.getByRole('heading', { name: 'Criar e editar treinos' })).toBeVisible();
   await expect(page.locator('[role=dialog]')).toHaveCount(0);
 });

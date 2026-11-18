@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useDemoSession } from './demo-session';
+import { GuideProvider, GuideToggle, PageGuide } from './guided-mode';
 import { PageMotion } from './motion';
 import { usePremiumShell } from './premium-motion';
 import Link from 'next/link';
@@ -23,7 +24,6 @@ import {
   Moon,
   Sun,
   Settings2,
-  ShieldCheck,
   Users,
   Wallet,
   History,
@@ -50,11 +50,11 @@ const navigation = {
   personal: [
     { href: '/personal', label: 'Visão geral', icon: LayoutDashboard },
     { href: '/personal/alunos', label: 'Alunos', icon: Users },
+    { href: '/personal/evolucao', label: 'Evolução física', icon: ChartNoAxesCombined },
+    { href: '/personal/agenda', label: 'Agenda', icon: CalendarDays },
     { href: '/personal/treinos', label: 'Treinos', icon: ClipboardList },
     { href: '/personal/studio', label: 'MOVRA Studio', icon: WandSparkles },
     { href: '/personal/exercicios', label: 'Exercícios', icon: BookOpen },
-    { href: '/personal/evolucao', label: 'Evolução física', icon: ChartNoAxesCombined },
-    { href: '/personal/agenda', label: 'Agenda', icon: CalendarDays },
     { href: '/personal/alimentacao', label: 'Alimentação', icon: Apple },
     { href: '/personal/configuracoes', label: 'Configurações', icon: Settings2 },
   ],
@@ -117,7 +117,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
     ready,
     onNavigate,
   } = usePremiumShell(path, (href) => router.push(href));
-  const { session, leave, switchProfile } = useDemoSession();
+  const { session, studentId, leave, switchProfile } = useDemoSession();
   useEffect(() => {
     if (!session || session.role !== role) router.replace('/entrar');
   }, [session, role, router]);
@@ -146,33 +146,47 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
       <span className="sidebar-active-track" aria-hidden="true" />
       {items.map(({ href, label, icon: Icon }) => {
         const active = path === href || (href !== `/${role}` && path.startsWith(`${href}/`));
+        const section =
+          href === '/personal/treinos'
+            ? 'Planejamento'
+            : href === '/personal/alimentacao'
+              ? 'Meu espaço'
+              : undefined;
         return (
-          <Link
-            key={href}
-            href={href}
-            aria-label={label}
-            data-tooltip={label}
-            title={label}
-            onFocus={(e) =>
-              e.currentTarget.style.setProperty(
-                '--tooltip-y',
-                `${e.currentTarget.getBoundingClientRect().top}px`,
-              )
-            }
-            onMouseEnter={(e) =>
-              e.currentTarget.style.setProperty(
-                '--tooltip-y',
-                `${e.currentTarget.getBoundingClientRect().top}px`,
-              )
-            }
-            aria-current={active ? 'page' : undefined}
-            className={cn('sidebar-link', active && 'active')}
-            onClick={() => setMenuOpen(false)}
-          >
-            <Icon size={19} aria-hidden />
-            <span>{label}</span>
-            {active && <span className="nav-active-dot" />}
-          </Link>
+          <Fragment key={href}>
+            {section && <span className="nav-section">{section}</span>}
+            <Link
+              href={href}
+              aria-label={label}
+              aria-description={href.endsWith('/studio') ? 'Criar e editar treinos' : undefined}
+              data-tooltip={label}
+              title={label}
+              onFocus={(e) =>
+                e.currentTarget.style.setProperty(
+                  '--tooltip-y',
+                  `${e.currentTarget.getBoundingClientRect().top}px`,
+                )
+              }
+              onMouseEnter={(e) =>
+                e.currentTarget.style.setProperty(
+                  '--tooltip-y',
+                  `${e.currentTarget.getBoundingClientRect().top}px`,
+                )
+              }
+              aria-current={active ? 'page' : undefined}
+              className={cn('sidebar-link', active && 'active')}
+              onClick={() => setMenuOpen(false)}
+            >
+              <Icon size={19} aria-hidden />
+              <span>
+                {label}
+                {href.endsWith('/studio') && (
+                  <small className="nav-purpose">Criar e editar treinos</small>
+                )}
+              </span>
+              {active && <span className="nav-active-dot" />}
+            </Link>
+          </Fragment>
         );
       })}
     </nav>
@@ -190,16 +204,6 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
       <div className="environment-label">{labels[role]}</div>
       {links}
       <div className="sidebar-bottom">
-        <div className="sidebar-note">
-          <span className="sidebar-note-icon">
-            <ShieldCheck size={18} aria-hidden />
-          </span>
-          <p>
-            Seu cuidado,
-            <br />
-            <strong>presente em cada treino.</strong>
-          </p>
-        </div>
         <p className="role-label">Visualizar demonstração como</p>
         <div className="environment-select">
           <select
@@ -233,151 +237,162 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
       </div>
     );
   return (
-    <div
-      className={cn(
-        'app-shell',
-        `environment-${role}`,
-        compact && 'sidebar-compact',
-        ready && 'appearance-ready',
-      )}
-      onClickCapture={onNavigate}
+    <GuideProvider
+      key={role === 'aluno' ? studentId : role}
+      owner={role === 'aluno' ? studentId : role}
     >
-      <a
-        className="skip-link"
-        href="#main-content"
-        onClick={(event) => {
-          event.preventDefault();
-          const main = document.getElementById('main-content');
-          main?.focus();
-          main?.scrollIntoView();
-        }}
+      <div
+        className={cn(
+          'app-shell',
+          `environment-${role}`,
+          compact && 'sidebar-compact',
+          ready && 'appearance-ready',
+        )}
+        onClickCapture={onNavigate}
       >
-        Pular para o conteúdo
-      </a>
-      <aside ref={sidebarRef} className="sidebar desktop-sidebar">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="sidebar-collapse"
-          aria-label={compact ? 'Expandir navegação' : 'Recolher navegação'}
-          aria-expanded={!compact}
-          onClick={() => setCompact(!compact)}
+        <a
+          className="skip-link"
+          href="#main-content"
+          onClick={(event) => {
+            event.preventDefault();
+            const main = document.getElementById('main-content');
+            main?.focus();
+            main?.scrollIntoView();
+          }}
         >
-          {compact ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
-        </Button>
-        {sidebar}
-      </aside>
-      <div className="workspace">
-        <header className="topbar">
+          Pular para o conteúdo
+        </a>
+        <aside ref={sidebarRef} className="sidebar desktop-sidebar">
           <Button
             variant="ghost"
             size="icon"
-            className="theme-switch"
-            aria-label={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
-            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            className="sidebar-collapse"
+            aria-label={compact ? 'Expandir navegação' : 'Recolher navegação'}
+            aria-expanded={!compact}
+            onClick={() => setCompact(!compact)}
           >
-            {theme === 'light' ? <Moon size={19} /> : <Sun size={19} />}
+            {compact ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
           </Button>
-          <div className="breadcrumb">
-            <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="mobile-menu" aria-label="Abrir menu">
-                  <Menu />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="mobile-drawer translate-x-0! translate-y-0!">
-                <DialogHeader className="sr-only">
-                  <DialogTitle>Navegação MOVRA</DialogTitle>
-                  <DialogDescription>
-                    Escolha uma página ou ambiente demonstrativo.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="sidebar">{menuOpen && sidebar}</div>
-              </DialogContent>
-            </Dialog>
-            <span className="breadcrumb-environment">{labels[role]}</span>
-            <ChevronRight size={14} aria-hidden />
-            <span>{current.label}</span>
-          </div>
-          <div className="topbar-actions">
-            <span className="demo-pill">
-              <span />
-              Demonstração
-            </span>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Sobre esta demonstração">
-                  <HelpCircle size={19} />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Um espaço para experimentar.</DialogTitle>
-                  <DialogDescription>
-                    Todos os dados são fictícios. Você pode navegar, criar e editar registros
-                    locais. Os registros persistem no navegador, sem armazenamento seguro. Sem
-                    autenticação, pagamentos, IA ou proteção de dados de produção.
-                  </DialogDescription>
-                </DialogHeader>
-                <p className="muted small">
-                  A data de referência dos exemplos é 12 de novembro de 2026.
-                </p>
-              </DialogContent>
-            </Dialog>
-            <AccountMenu
-              name={profile.name}
-              onLeave={leaveAccount}
-              onSwitch={() => changeProfile()}
+          {sidebar}
+        </aside>
+        <div className="workspace">
+          <header className="topbar">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="theme-switch"
+              aria-label={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             >
-              <Button variant="ghost" size="icon" aria-label={`Conta de ${profile.name}`}>
-                <Avatar name={profile.name} small />
-              </Button>
-            </AccountMenu>
+              {theme === 'light' ? <Moon size={19} /> : <Sun size={19} />}
+            </Button>
+            <div className="breadcrumb">
+              <Dialog open={menuOpen} onOpenChange={setMenuOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mobile-menu"
+                    aria-label="Abrir menu"
+                  >
+                    <Menu />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="mobile-drawer translate-x-0! translate-y-0!">
+                  <DialogHeader className="sr-only">
+                    <DialogTitle>Navegação MOVRA</DialogTitle>
+                    <DialogDescription>
+                      Escolha uma página ou ambiente demonstrativo.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="sidebar">{menuOpen && sidebar}</div>
+                </DialogContent>
+              </Dialog>
+              <span className="breadcrumb-environment">{labels[role]}</span>
+              <ChevronRight size={14} aria-hidden />
+              <span>{current.label}</span>
+            </div>
+            <div className="topbar-actions">
+              <span className="demo-pill">
+                <span />
+                Demonstração
+              </span>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Sobre esta demonstração">
+                    <HelpCircle size={19} />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Um espaço para experimentar.</DialogTitle>
+                    <DialogDescription>
+                      Todos os dados são fictícios. Você pode navegar, criar e editar registros
+                      locais. Os registros persistem no navegador, sem armazenamento seguro. Sem
+                      autenticação, pagamentos, IA ou proteção de dados de produção.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <p className="muted small">
+                    A data de referência dos exemplos é 12 de novembro de 2026.
+                  </p>
+                </DialogContent>
+              </Dialog>
+              <AccountMenu
+                name={profile.name}
+                onLeave={leaveAccount}
+                onSwitch={() => changeProfile()}
+              >
+                <Button variant="ghost" size="icon" aria-label={`Conta de ${profile.name}`}>
+                  <Avatar name={profile.name} small />
+                </Button>
+              </AccountMenu>
+            </div>
+          </header>
+          <div className="demo-strip">
+            <span>
+              Prévia local ·{' '}
+              {data.storageState === 'local'
+                ? 'dados salvos no navegador'
+                : data.storageState === 'invalid'
+                  ? 'armazenamento inválido; use redefinir dados'
+                  : data.storageState === 'unavailable'
+                    ? 'sem persistência disponível'
+                    : 'iniciando armazenamento'}
+            </span>
+            <GuideToggle />
           </div>
-        </header>
-        <div className="demo-strip">
-          <span>
-            Prévia local ·{' '}
-            {data.storageState === 'local'
-              ? 'dados salvos no navegador'
-              : data.storageState === 'invalid'
-                ? 'armazenamento inválido; use redefinir dados'
-                : data.storageState === 'unavailable'
-                  ? 'sem persistência disponível'
-                  : 'iniciando armazenamento'}
-          </span>
-          <span>
-            12 nov 2026 <span className="desktop-only">· dia demonstrativo</span>
-          </span>
+          <main id="main-content" className="page-content" tabIndex={-1}>
+            <PageMotion route={path}>
+              <PageGuide path={path} />
+              {children}
+            </PageMotion>
+          </main>
+          <footer className="workspace-footer">
+            <span>MOVRA · Cada treino, um próximo passo.</span>
+            <span>Dados fictícios locais · sessão sem autenticação</span>
+          </footer>
         </div>
-        <main id="main-content" className="page-content" tabIndex={-1}>
-          <PageMotion route={path}>{children}</PageMotion>
-        </main>
-        <footer className="workspace-footer">
-          <span>MOVRA · Cada treino, um próximo passo.</span>
-          <span>Dados fictícios locais · sessão sem autenticação</span>
-        </footer>
+        {role === 'aluno' && (
+          <nav className="student-bottom-nav" aria-label="Navegação rápida do aluno">
+            {navigation.aluno
+              .filter((i) =>
+                [
+                  '/aluno',
+                  '/aluno/treinos',
+                  '/aluno/alimentacao',
+                  '/aluno/evolucao',
+                  '/aluno/perfil',
+                ].includes(i.href),
+              )
+              .map(({ href, label, icon: Icon }) => (
+                <Link key={href} href={href} aria-current={path === href ? 'page' : undefined}>
+                  <Icon size={21} aria-hidden />
+                  <span>{label}</span>
+                </Link>
+              ))}
+          </nav>
+        )}
       </div>
-      {role === 'aluno' && (
-        <nav className="student-bottom-nav" aria-label="Navegação rápida do aluno">
-          {navigation.aluno
-            .filter((i) =>
-              [
-                '/aluno',
-                '/aluno/treinos',
-                '/aluno/alimentacao',
-                '/aluno/evolucao',
-                '/aluno/perfil',
-              ].includes(i.href),
-            )
-            .map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} aria-current={path === href ? 'page' : undefined}>
-                <Icon size={21} aria-hidden />
-                <span>{label}</span>
-              </Link>
-            ))}
-        </nav>
-      )}
-    </div>
+    </GuideProvider>
   );
 }

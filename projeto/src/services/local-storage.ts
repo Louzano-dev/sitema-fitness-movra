@@ -18,6 +18,12 @@ const set = z.object({
   reps: z.number().int().positive(),
   done: z.boolean(),
 });
+// JSON represents the blank numeric inputs of an unfinished set as null.
+const draftNumber = z
+  .number()
+  .nullable()
+  .transform((value) => value ?? NaN);
+const draftSet = set.extend({ kg: draftNumber, reps: draftNumber });
 export const storedStateSchema = z
   .object({
     students: z.array(
@@ -30,6 +36,8 @@ export const storedStateSchema = z
         group: z.string(),
         equipment: z.string(),
         instructions: z.string(),
+        pattern: z.string().optional(),
+        difficulty: z.string().optional(),
       }),
     ),
     workouts: z.array(
@@ -85,7 +93,13 @@ export const storedStateSchema = z
       }),
     ),
     profiles: z.object({ personal: profileSchema, aluno: profileSchema, admin: profileSchema }),
-    drafts: z.record(z.string(), z.array(set)),
+    workoutCheckpoints: z
+      .record(
+        z.string(),
+        z.object({ elapsedMs: z.number().nonnegative(), previousCardioIds: z.array(id) }),
+      )
+      .optional(),
+    drafts: z.record(z.string(), z.array(draftSet)),
     experience: experienceSchema,
   })
   .refine(
@@ -108,12 +122,5 @@ export function readLocal(storage: Pick<Storage, 'getItem'>): DemoState | null {
   return envelope.state;
 }
 export function writeLocal(storage: Pick<Storage, 'setItem'>, state: DemoState): void {
-  const drafts = Object.fromEntries(
-    Object.entries(state.drafts).filter(([, sets]) =>
-      sets.every(
-        (s) => Number.isFinite(s.kg) && Number.isInteger(s.reps) && s.kg >= 0 && s.reps > 0,
-      ),
-    ),
-  );
-  storage.setItem(STORAGE_KEY, JSON.stringify({ version: 3, state: { ...state, drafts } }));
+  storage.setItem(STORAGE_KEY, JSON.stringify({ version: 3, state }));
 }

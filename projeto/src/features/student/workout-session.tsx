@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowLeft, CircleCheck, Pause, Play, SkipForward } from 'lucide-react';
+import { WorkoutOutline } from '@/components/workout-outline';
 import { useDemo, useRepository } from '@/components/providers';
 import { EmptyState, Feedback, Field, PageHeader, Panel } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -141,23 +142,55 @@ function RestTimer({
   );
 }
 export function WorkoutSessionPage({ id }: { id: string }) {
-  const { studentId: activeStudentId } = useDemoSession();
+  const { studentId } = useDemoSession();
+  return <WorkoutExecution key={studentId + '/' + id} id={id} activeStudentId={studentId} />;
+}
+function WorkoutExecution({ id, activeStudentId }: { id: string; activeStudentId: string }) {
   const data = useDemo();
   const repository = useRepository();
   const workout = data.workouts.find((w) => w.id === id && w.studentId === activeStudentId);
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState(false);
+  const [priorCardio] = useState(
+    () =>
+      new Set(
+        data.workoutCheckpoints?.[id]?.previousCardioIds ??
+          (data.experience.cardioRecords ?? [])
+            .filter((r) => r.workoutId === id && r.studentId === activeStudentId)
+            .map((r) => r.id),
+      ),
+  );
   const [sessionId, setSessionId] = useState<string>();
   const [paused, setPaused] = useState(false);
-  const pausedAt = useRef(0);
-  const pausedTime = useRef(0);
+  const elapsed = useRef(data.workoutCheckpoints?.[id]?.elapsedMs ?? 0);
+  const finished = useRef(false);
   const [note, setNote] = useState('');
   const [rest, setRest] = useState({ duration: 60, version: 0 });
   const start = useRef<number | null>(null);
   useEffect(() => {
+    if (!workout?.exercises.length || paused || sessionId) return;
     start.current = Date.now();
-  }, []);
+    function checkpoint() {
+      if (finished.current || start.current === null) return;
+      elapsed.current += Math.max(0, Date.now() - start.current);
+      start.current = null;
+      repository.saveWorkoutCheckpoint(id, {
+        elapsedMs: elapsed.current,
+        previousCardioIds: [...priorCardio],
+      });
+    }
+    function resume() {
+      if (!finished.current && start.current === null) start.current = Date.now();
+    }
+    window.addEventListener('pagehide', checkpoint);
+    window.addEventListener('pageshow', resume);
+    return () => {
+      window.removeEventListener('pagehide', checkpoint);
+      window.removeEventListener('pageshow', resume);
+      checkpoint();
+    };
+  }, [id, paused, priorCardio, repository, sessionId, workout?.exercises.length]);
   useEffect(() => {
     if (sessionId) {
       const heading = document.querySelector<HTMLElement>('.completion h2');
@@ -255,6 +288,17 @@ export function WorkoutSessionPage({ id }: { id: string }) {
                 : ' Primeiro registro desta ficha/versão; ainda não há sessão anterior para comparar.'}{' '}
               Soma descritiva de carga × repetições, sem avaliação clínica ou pontuação.
             </p>
+            {(data.experience.cardioRecords ?? [])
+              .filter(
+                (r) =>
+                  r.workoutId === id && r.studentId === activeStudentId && !priorCardio.has(r.id),
+              )
+              .map((r) => (
+                <p key={r.id}>
+                  Cardio registrado · {r.prescription.modality.name} · {Math.floor(r.seconds / 60)}{' '}
+                  min {r.seconds % 60}s {r.notes}
+                </p>
+              ))}
             <Field label="Feedback ao personal (opcional)" htmlFor="session-feedback">
               <Textarea
                 id="session-feedback"
@@ -291,25 +335,18 @@ export function WorkoutSessionPage({ id }: { id: string }) {
           'Registre a carga e as repetições executadas. Zero kg representa uma execução sem carga externa.'
         }
       />
+      <details className="studio-tools">
+        <summary>Consultar ficha completa · {workout.exercises.length} exercícios</summary>
+        <WorkoutOutline workout={workout} library={data.exercises} />
+      </details>
       <CardioExecution workout={workout} position="Antes" />
       <div className="form-actions">
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (paused) {
-              pausedTime.current += Date.now() - pausedAt.current;
-              setPaused(false);
-            } else {
-              pausedAt.current = Date.now();
-              setPaused(true);
-            }
-          }}
-        >
+        <Button variant="outline" onClick={() => setPaused((value) => !value)}>
           {paused ? 'Retomar sessão' : 'Pausar sessão'}
         </Button>
         <span role="status">
           {paused
-            ? 'Registro pausado; tempo de execução suspenso. O descanso é independente.'
+            ? 'Sessão pausada. Use Retomar sessão para continuar.'
             : 'Registre as séries no seu ritmo.'}
         </span>
       </div>
@@ -335,7 +372,14 @@ export function WorkoutSessionPage({ id }: { id: string }) {
                   <div className="session-exercise-heading">
                     <span>{String(index + 1).padStart(2, '0')}</span>
                     <div>
+                      <p className="eyebrow">
+                        Exercício {index + 1} de {workout.exercises.length}
+                      </p>
                       <h2>{exercise.name}</h2>
+                      <p role="status">
+                        {sets.filter((s) => s.exerciseId === exercise.id && s.done).length} de{' '}
+                        {prescription.sets} séries concluídas
+                      </p>
                       <p>
                         {prescription.sets} séries × {prescription.reps}
                         {prescription.repsMax ? `–${prescription.repsMax}` : ''} reps · descanso
@@ -344,6 +388,22 @@ export function WorkoutSessionPage({ id }: { id: string }) {
                     </div>
                   </div>
                   <p className="form-help mb-4">{exercise.instructions}</p>
+                  {!exercise.id.startsWith('own-') && (
+                    <small>
+                      Orientação de catálogo · demonstração técnica pendente de validação.
+                    </small>
+                  )}
+                  {prescription.rir !== undefined && (
+                    <p>Repetições em reserva orientadas: {prescription.rir}</p>
+                  )}
+                  {prescription.rpe !== undefined && (
+                    <p>Esforço orientado: {prescription.rpe}/10</p>
+                  )}
+                  {prescription.kg !== undefined && (
+                    <p className="previous-load">
+                      Carga orientada pelo personal: {prescription.kg} kg
+                    </p>
+                  )}
                   {prescription.notes && (
                     <aside className="personal-instruction">
                       <strong>Orientação do personal</strong>
@@ -450,13 +510,19 @@ export function WorkoutSessionPage({ id }: { id: string }) {
                                 setError(
                                   'Revise a carga e as repetições antes de concluir esta série.',
                                 );
-                                document.getElementById(`kg-${exercise.id}-${log.set}`)?.focus();
+                                const field =
+                                  !Number.isFinite(log.kg) || log.kg < 0 || log.kg > 1000
+                                    ? 'kg'
+                                    : 'reps';
+                                document
+                                  .getElementById(`${field}-${exercise.id}-${log.set}`)
+                                  ?.focus();
                                 return;
                               }
                               updateSet(exercise.id, log.set, { done: event.target.checked });
                             }}
                           />
-                          <span className="sr-only">Concluir série {log.set}</span>
+                          <span aria-hidden>{log.done ? 'Registrada' : 'Registrar'}</span>
                         </label>
                       </div>
                     ))}
@@ -542,9 +608,11 @@ export function WorkoutSessionPage({ id }: { id: string }) {
                 if (!data.drafts[id]) repository.saveDraft(id, sets);
                 const resultId = await repository.finishWorkout(
                   id,
-                  (Date.now() - (start.current ?? Date.now()) - pausedTime.current) / 60000,
+                  (elapsed.current + Math.max(0, Date.now() - (start.current ?? Date.now()))) /
+                    60000,
                   activeStudentId,
                 );
+                finished.current = true;
                 setSessionId(resultId);
               } catch (e) {
                 setError(errorMessage(e));

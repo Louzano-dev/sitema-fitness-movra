@@ -3,6 +3,8 @@
 @import '../features/experience.css';
 @import '../components/premium.css';
 @import '../components/interaction.css';
+@import '../components/universal.css';
+@import '../features/training.css';
 
 @theme inline {
   --color-background: var(--background);

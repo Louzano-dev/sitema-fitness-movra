@@ -4,8 +4,16 @@ import type {
   StudentInput,
   WorkoutInput,
 } from '@/domain/schemas';
-import type { DemoState, Environment, Plan, Profile, SetLog } from '@/domain/types';
+import type {
+  DemoState,
+  Environment,
+  Plan,
+  Profile,
+  SetLog,
+  WorkoutCheckpoint,
+} from '@/domain/types';
 export interface MovraRepository {
+  saveOwnExercise(input: Omit<import('@/domain/types').Exercise, 'id'>): string;
   attachStorage(storage?: Pick<Storage, 'getItem' | 'setItem'>): void;
   updateExperience(
     update: (
@@ -25,6 +33,7 @@ export interface MovraRepository {
   saveProfile(role: Environment, input: Profile, studentId?: string): Promise<void>;
   savePlan(id: string, input: Omit<Plan, 'id'>): Promise<void>;
   updateOrganization(id: string, planId: string, status: 'Ativa' | 'Pausada'): Promise<void>;
+  saveWorkoutCheckpoint(workoutId: string, checkpoint: WorkoutCheckpoint): void;
   saveDraft(workoutId: string, sets: SetLog[]): void;
   finishWorkout(
     workoutId: string,

@@ -55,7 +55,7 @@ class PortableErrorBoundary extends Component<{ children: ReactNode }, { failed:
 function RouteView({ path, query }: { path: string; query: URLSearchParams }) {
   if (path === '/entrar' || path === '/') return <LoginPage />;
   if (path === '/personal') return <PersonalDashboard />;
-  if (path === '/personal/studio') return <StudioPage />;
+  if (path === '/personal/studio') return <StudioPage reviewQueue={query.get('revisao') === '1'} />;
   if (path === '/personal/alimentacao') return <FuelPage personal />;
   if (path === '/aluno/alimentacao') return <FuelPage />;
   if (path === '/aluno/agenda') return <StudentAgenda />;

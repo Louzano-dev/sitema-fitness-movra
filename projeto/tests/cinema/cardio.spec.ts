@@ -46,6 +46,7 @@ for (const width of [390, 1280])
     await page.goto(entry);
     await page.getByRole('button', { name: 'Entrar na demonstração', exact: true }).click();
     await navigate(page, 'MOVRA Studio');
+    await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
     await page.getByRole('button', { name: 'Criar treino do zero', exact: true }).click();
     await page.getByLabel('Nome da ficha', { exact: true }).fill('Cardio validado');
     await page.getByRole('button', { name: 'Adicionar cardio', exact: true }).click();

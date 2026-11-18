@@ -69,6 +69,7 @@ for (const width of [390, 1280])
     await enter(page);
     await page.setViewportSize({ width, height: 900 });
     await navigate(page, 'MOVRA Studio');
+    await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
     await page.getByRole('button', { name: 'Gerar treino personalizado', exact: true }).click();
     for (let step = 0; step < 5; step++)
       await page.getByRole('button', { name: 'Continuar', exact: true }).click();
@@ -134,6 +135,7 @@ for (const width of [390, 1280])
 test('Studio bloqueia geração automática de menores e contexto especial', async ({ page }) => {
   await enter(page);
   await navigate(page, 'MOVRA Studio');
+  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
   await page.getByRole('button', { name: 'Gerar treino personalizado', exact: true }).click();
   await page.getByLabel('Idade fictícia').fill('16');
   for (let step = 0; step < 5; step++)
@@ -144,6 +146,11 @@ test('Studio bloqueia geração automática de menores e contexto especial', asy
   await page.getByRole('button', { name: 'Abrir planejamento supervisionado' }).click();
   await expect(page.locator('.studio-exercise')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Atribuir ficha ao aluno' })).toBeDisabled();
+  await navigate(page, 'Alunos');
+  await navigate(page, 'MOVRA Studio');
+  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
+  await page.getByRole('button', { name: 'Gerar treino personalizado', exact: true }).click();
+  await expect(page.getByLabel('Idade fictícia')).toHaveValue('16');
 });
 
 for (const width of [390, 1280])
@@ -239,10 +246,14 @@ test('Fuel alimento personalizado, estimativa parcial e receita', async ({ page 
 test('Studio manual: biblioteca, parâmetros, duplicação, ordem e modelo', async ({ page }) => {
   await enter(page);
   await navigate(page, 'MOVRA Studio');
+  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
   await page.getByRole('button', { name: 'Criar treino do zero', exact: true }).click();
   await page.getByLabel('Nome da ficha', { exact: true }).fill('Modelo manual validado');
+  await page.getByRole('button', { name: 'Adicionar exercícios', exact: true }).click();
   await page.getByLabel('Pesquisar exercício para adicionar').fill('abdominal');
   await page.getByLabel('Adicionar exercício', { exact: true }).selectOption('abdominal');
+  await page.getByRole('button', { name: 'Adicionar ao dia', exact: true }).click();
+  await page.getByRole('button', { name: 'Voltar à ficha', exact: true }).click();
   const rows = page.locator('.studio-exercise');
   await expect(rows).toHaveCount(1);
   await rows.first().getByLabel('Repetições iniciais', { exact: true }).fill('8');
@@ -257,7 +268,7 @@ test('Studio manual: biblioteca, parâmetros, duplicação, ordem e modelo', asy
   await expect(rows.first().getByLabel('Séries', { exact: true })).not.toHaveValue('4');
   await page.getByLabel('Instruções da sessão').fill('Instrução fictícia revisável.');
   await page.getByRole('button', { name: 'Salvar como modelo', exact: true }).click();
-  await page.getByRole('button', { name: 'Prévia do aluno', exact: true }).click();
+  await page.getByRole('button', { name: 'Visualizar como o aluno', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('Modelo manual validado');
   await expect(page.getByRole('dialog')).toContainText('Instrução fictícia revisável.');
   await page.getByRole('button', { name: 'Fechar', exact: true }).click();
@@ -265,20 +276,16 @@ test('Studio manual: biblioteca, parâmetros, duplicação, ordem e modelo', asy
   await expect(page.getByRole('button', { name: 'Usar modelo', exact: true })).toHaveCount(1);
 });
 
-test('Fuel mostra estimativas automaticamente em todos os perfis, sem alternância', async ({
-  page,
-}) => {
+test('Fuel mantém o diário de menor sem contagem individualizada', async ({ page }) => {
   await enter(page, 'aluno', 'clara');
   await navigate(page, 'Alimentação');
   await expect(page.getByLabel('Mostrar estimativas nutricionais')).toHaveCount(0);
-  await expect(
-    page.getByRole('heading', { name: 'Estimativas do dia', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Estimativas do dia' })).toHaveCount(0);
   await addRice(page);
-  await expect(page.locator('.nutrition-numbers').first()).toBeVisible();
-  await expect(page.locator('.stats-grid')).toContainText('195 kcal');
+  await expect(page.locator('.nutrition-numbers')).toHaveCount(0);
+  await expect(page.locator('.stats-grid')).not.toContainText('kcal');
   await page.getByRole('button', { name: 'Cadastrar alimento', exact: true }).click();
-  await expect(page.getByLabel('Energia (kcal)', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Energia (kcal)', { exact: true })).toHaveCount(0);
 });
 
 test('Studio e Fuel: acessibilidade, redução de movimento e redefinição', async ({ page }) => {
@@ -290,6 +297,7 @@ test('Studio e Fuel: acessibilidade, redução de movimento e redefinição', as
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
     .analyze();
   expect(result.violations).toEqual([]);
+  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
   await page.getByRole('button', { name: 'Gerar treino personalizado', exact: true }).click();
   result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])

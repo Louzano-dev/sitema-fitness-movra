@@ -57,12 +57,15 @@ export function PersonalDashboard() {
         session.date <= DEMO_DATE,
     ),
   ).length;
+  const awaitingReview = data.experience.programs.filter(
+    (program) => program.status === 'Aguardando revisão',
+  ).length;
   return (
     <>
       <PageHeader
         eyebrow="Seu acompanhamento, de perto"
         title={`Bom dia, ${data.profiles.personal.name.split(' ')[0]}.`}
-        description="Um novo dia para estar presente na evolução de cada pessoa."
+        description="Acompanhe os alunos, as fichas e os encontros de hoje."
         action={
           <Button asChild>
             <Link href="/personal/treinos/novo">
@@ -81,6 +84,12 @@ export function PersonalDashboard() {
               Você tem {today.length} encontros na agenda de hoje. Veja o contexto dos alunos e
               prepare o próximo contato.
             </p>
+            <Link className="review-shortcut" href="/personal/studio?revisao=1">
+              {awaitingReview === 1
+                ? '1 ficha aguardando revisão'
+                : `${awaitingReview} fichas aguardando revisão`}{' '}
+              <ArrowRight size={16} aria-hidden />
+            </Link>
           </div>
           <div className="day-focus">
             <span>Próximo encontro na agenda de hoje</span>
@@ -118,7 +127,7 @@ export function PersonalDashboard() {
           <Stat
             label="Sessões registradas"
             value={String(data.sessions.length).padStart(2, '0')}
-            note="Histórico demonstrativo completo"
+            note="Consulte o histórico na evolução física"
             icon={Activity}
           />
         </div>
@@ -148,9 +157,8 @@ export function PersonalDashboard() {
             </p>
           </div>
           <div className="quick-actions">
-            <TextLink href="/personal/studio">Gerar proposta no Studio</TextLink>
-            <TextLink href="/personal/agenda">Organizar meu dia</TextLink>
-            <TextLink href="/personal/exercicios">Consultar exercícios</TextLink>
+            <TextLink href="/personal/alunos">Ver alunos</TextLink>
+            <TextLink href="/personal/evolucao">Acompanhar evolução</TextLink>
           </div>
         </div>
         <div className="dashboard-grid">
@@ -274,6 +282,11 @@ export function PersonalDashboard() {
             description="Alunos sem registros nos últimos 7 dias"
           >
             <div className="attention-list">
+              {!attention.length && (
+                <p className="form-help">
+                  Todos os alunos ativos têm uma sessão registrada nos últimos 7 dias.
+                </p>
+              )}
               {attention.slice(0, 3).map((s) => (
                 <div className="attention-row" key={s.id}>
                   <Avatar name={s.name} color={s.color} small />

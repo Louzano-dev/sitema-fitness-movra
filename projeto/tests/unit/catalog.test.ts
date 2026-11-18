@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import { EXERCISES, GENERATOR_EXERCISES } from '@/domain/exercise-catalog';
+import { EXERCISES, ORIGINAL_EXERCISES } from '@/domain/exercise-catalog';
 import { exerciseSlug } from '@/domain/exercise-expansion';
 import { MockRepository } from '@/services/mock/repository';
 import { createSeed } from '@/services/mock/seed';
@@ -10,11 +10,11 @@ it('catálogo amplo sem IDs ou nomes repetidos, com equipamentos e descrições'
   expect(new Set(EXERCISES.map((e) => e.id)).size).toBe(EXERCISES.length);
   expect(new Set(EXERCISES.map((e) => exerciseSlug(e.name))).size).toBe(EXERCISES.length);
   expect(EXERCISES.every((e) => e.requires.length && e.instructions && e.technical)).toBe(true);
-  expect(GENERATOR_EXERCISES).toHaveLength(22);
+  expect(ORIGINAL_EXERCISES).toHaveLength(22);
 });
 it('restaura dados antigos sem perder fichas e adiciona exercícios novos ao repositório', () => {
   const seed = createSeed();
-  seed.exercises = GENERATOR_EXERCISES;
+  seed.exercises = ORIGINAL_EXERCISES;
   const store = new Map<string, string>();
   const storage = {
     getItem: (k: string) => store.get(k) ?? null,

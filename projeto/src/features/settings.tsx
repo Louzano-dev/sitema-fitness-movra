@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Controller, useController, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDemo, useRepository } from '@/components/providers';
+import { PERSONAL_FUEL_ID } from '@/services/experience-service';
 import { Avatar, Feedback, Field, PageHeader, Panel } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,9 @@ export function SettingsPage({ role }: { role: Environment }) {
     resolver: zodResolver(profileSchema),
     defaultValues: data.profiles[role],
   });
+  const diaryOwner = role === 'personal' ? PERSONAL_FUEL_ID : studentId;
+  const canChooseNumbers =
+    role === 'personal' || (role === 'aluno' && (data.experience.ages[studentId] ?? 0) >= 18);
   const nameField = useController({ control, name: 'name' }).field;
   const emailField = useController({ control, name: 'email' }).field;
   const specialtyField = useController({ control, name: 'specialty' }).field;
@@ -52,6 +56,26 @@ export function SettingsPage({ role }: { role: Environment }) {
             notificação é enviado.
           </p>
           <p>Não há senha, sessão autenticada ou recuperação de conta nesta versão.</p>
+          {canChooseNumbers && (
+            <label className="checkbox-row fuel-preference">
+              <input
+                type="checkbox"
+                checked={data.experience.preferences[diaryOwner]?.showNumbers ?? true}
+                onChange={(event) => {
+                  const showNumbers = event.currentTarget.checked;
+                  repository.updateExperience((state) => ({
+                    ...state,
+                    preferences: {
+                      ...state.preferences,
+                      [diaryOwner]: { showNumbers, share: false },
+                    },
+                  }));
+                  setSuccess('Preferência do diário atualizada.');
+                }}
+              />
+              Exibir estimativas numéricas no meu diário
+            </label>
+          )}
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline">Redefinir dados demonstrativos</Button>

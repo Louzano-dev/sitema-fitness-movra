@@ -1,0 +1,291 @@
+.app-shell .demo-strip {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+.guide-toggle {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.guide-toggle strong {
+  padding: 0.2em 0.6em;
+  border: 1px solid var(--input);
+  border-radius: 2em;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.guide-toggle[aria-pressed='true'] strong {
+  color: #172c29;
+  background: #c9f078;
+}
+.guide-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border-inline-start: 3px solid var(--primary);
+  border-radius: 0.5rem;
+}
+.guide-hint p {
+  flex: 1 1 15rem;
+  font-size: 1rem;
+}
+.nav-purpose {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.sidebar .nav-section {
+  margin: 0.25rem 0.85rem 0;
+  color: #b9c7be;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.sidebar-compact .desktop-sidebar .nav-section {
+  display: none;
+}
+.personal-command .welcome-banner .review-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  color: #d6f594;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+}
+.studio-launch {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.studio-launch button {
+  text-align: start;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  background: var(--popover);
+  border-radius: 0.875rem;
+  cursor: pointer;
+}
+.studio-launch button:first-child {
+  background: #203e34;
+  color: #f4f6ed;
+  border-color: #203e34;
+}
+.studio-launch button:first-child svg {
+  color: #c9f078;
+}
+.studio-launch button:hover {
+  box-shadow: inset 0 0 0 2px var(--input);
+}
+.studio-launch strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font: 600 1.1rem var(--font-display, system-ui);
+}
+.studio-launch svg {
+  flex: none;
+}
+.studio-launch span {
+  display: block;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-top: 0.7rem;
+}
+.studio-tools,
+.food-filters {
+  padding: 0.25rem 0.75rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.studio-tools summary,
+.food-filters summary,
+.studio-advanced summary {
+  padding: 0.65rem 0;
+  min-height: 44px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.studio-progress {
+  width: 100%;
+  height: 0.4rem;
+  display: block;
+  accent-color: var(--primary);
+  margin-top: 1rem;
+}
+.studio-tools .module-nav {
+  margin-block: 0.5rem;
+}
+.food-shortcuts,
+.student-shortcuts {
+  display: flex;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.food-shortcuts strong {
+  width: 100%;
+  font-size: 0.875rem;
+}
+.student-shortcuts {
+  margin-block: 0.5rem 1.25rem;
+}
+.student-shortcuts a {
+  min-height: 44px;
+}
+.editor-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+.app-shell .set-check {
+  padding: 0.25rem;
+  gap: 0.2rem;
+  flex-direction: column;
+  font-size: 0.75rem;
+  min-width: 4.5rem;
+}
+.app-shell .set-row {
+  grid-template-columns: 3rem minmax(0, 1fr) minmax(0, 1fr) minmax(4.5rem, auto);
+}
+.fuel-preference {
+  margin-block: 1rem;
+}
+.app-shell .form-stack :is(input:not([type='checkbox']), select, textarea),
+.fuel-food-dialog :is(input:not([type='checkbox']), select),
+.app-shell .session-exercise .form-help {
+  font-size: 1rem;
+}
+.app-shell :is(.studio-exercise, .session-exercise, .guide-hint) {
+  overflow-wrap: anywhere;
+}
+.app-shell .field,
+.studio-editor > *,
+.module-panel,
+.food-shortcuts > * {
+  min-width: 0;
+}
+:where(.app-shell, [role='dialog']) :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+[data-slot='dialog-content']:not(.mobile-drawer) [data-slot='dialog-close'] {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  top: 0.25rem;
+  right: 0.25rem;
+}
+[data-slot='dialog-content']:not(.mobile-drawer) [data-slot='dialog-title'] {
+  padding-inline-end: 1.5rem;
+}
+@media (max-width: 600px) {
+  .app-shell .set-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 0.3rem 0.5rem;
+    align-items: end;
+  }
+  .app-shell .set-number {
+    grid-column: 1/-1;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .app-shell .set-row .field label {
+    font-size: 0.8125rem;
+  }
+  .app-shell .set-check {
+    align-self: stretch;
+    justify-content: end;
+  }
+  .app-shell :is(.module-nav, .form-actions, .exercise-flow-actions) [data-slot='button'],
+  .food-shortcuts button {
+    min-height: 44px;
+    height: auto;
+    white-space: normal;
+  }
+  .studio-launch {
+    grid-template-columns: 1fr;
+  }
+  .studio-launch button {
+    padding: 0.875rem 1rem;
+  }
+  .app-shell .wizard-progress {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .app-shell .wizard-progress button {
+    min-height: 44px;
+  }
+  .app-shell .wizard-progress button span {
+    display: block;
+    font-size: 0.75rem;
+  }
+  .app-shell .guide-hint p {
+    flex-basis: 70%;
+  }
+  .app-shell .student-bottom-nav a {
+    min-width: 0;
+  }
+  .app-shell .studio-editor select,
+  .fuel-food-dialog select {
+    max-width: 100%;
+  }
+}
+@media (max-width: 380px) {
+  .app-shell .personal-command > .welcome-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .app-shell .personal-command .day-focus {
+    flex: auto;
+    flex-wrap: wrap;
+  }
+  .app-shell .personal-command > .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-shell .guide-toggle {
+    margin-inline-start: auto;
+  }
+  .app-shell .page-heading [data-slot='button'] {
+    white-space: normal;
+    height: auto;
+    min-height: 44px;
+  }
+  .app-shell .student-welcome-art {
+    display: none;
+  }
+}
+.app-shell {
+  font-size: 1rem;
+}
+.app-shell .page-description {
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.app-shell .form-help,
+.app-shell .field > label,
+.app-shell .personal-command .stat p {
+  font-size: 0.875rem;
+}
+.app-shell .personal-command > .welcome-banner {
+  align-self: stretch;
+}
+.app-shell .personal-command .welcome-banner p:not(.eyebrow) {
+  font-size: 1rem;
+}

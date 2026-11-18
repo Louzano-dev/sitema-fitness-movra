@@ -2,6 +2,7 @@
 import { useDemoSession } from '@/components/demo-session';
 import { ArrowRight, CalendarDays, ClipboardList, Clock3, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { trainingWeek } from '@/domain/training-week';
 import { Brand } from '@/components/brand';
 import { useDemo } from '@/components/providers';
 import { EmptyState, PageHeader, Panel, TextLink } from '@/components/shared';
@@ -20,7 +21,7 @@ export function StudentHome() {
       (a) => a.studentId === activeStudentId && a.date >= DEMO_DATE && a.status === 'Agendado',
     )
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
-  const workout = workouts[0];
+  const { next: workout, weekday } = trainingWeek(workouts, sessions, DEMO_DATE);
   return (
     <>
       <PageHeader
@@ -30,7 +31,11 @@ export function StudentHome() {
       />
       <section className="student-welcome">
         <div>
-          <p className="eyebrow">Seu treino do dia</p>
+          <p className="eyebrow">
+            {workout?.weekday && workout.weekday !== weekday
+              ? 'Próximo dia programado · ' + workout.weekday
+              : 'Seu treino do dia'}
+          </p>
           <h2>{workout?.title ?? 'Um novo treino está por vir.'}</h2>
           <p>
             {workout
@@ -50,6 +55,10 @@ export function StudentHome() {
           <Brand compact />
         </div>
       </section>
+      <div className="student-shortcuts">
+        <TextLink href="/aluno/alimentacao">Registrar alimentação</TextLink>
+        <TextLink href="/aluno/evolucao">Ver meu progresso</TextLink>
+      </div>
       <div className="student-home-grid">
         <Panel title="Seu percurso até aqui" description="Sessões disponíveis no histórico">
           <div className="student-metric-strip">
@@ -125,17 +134,29 @@ export function StudentHome() {
 export function StudentWorkouts() {
   const { studentId: activeStudentId } = useDemoSession();
   const data = useDemo();
+  const assigned = data.workouts.filter((w) => w.studentId === activeStudentId);
+  const week = trainingWeek(assigned, studentSessions(data, activeStudentId), DEMO_DATE);
+  const previous = assigned.filter((w) => !week.active.includes(w));
   return (
     <>
       <PageHeader
-        eyebrow="Meus treinos"
-        title="Um plano para o seu movimento."
+        eyebrow={`Semana de ${formatDate(week.dates[0])} a ${formatDate(week.dates[6])}`}
+        title="Meus treinos"
         description="Veja os treinos atribuídos pelo personal e escolha qual deseja registrar."
       />
-      <WorkoutCards
-        workouts={data.workouts.filter((w) => w.studentId === activeStudentId)}
-        studentView
-      />
+      {week.next && (
+        <p className="training-next">
+          Próximo treino sugerido <strong>{week.next.title}</strong>
+          {week.next.weekday && ' · ' + week.next.weekday}
+        </p>
+      )}
+      <WorkoutCards workouts={week.active} studentView />
+      {previous.length > 0 && (
+        <details className="studio-tools">
+          <summary>Fichas de versões anteriores</summary>
+          <WorkoutCards workouts={previous} studentView />
+        </details>
+      )}
     </>
   );
 }

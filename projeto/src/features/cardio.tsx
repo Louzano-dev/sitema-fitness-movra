@@ -19,6 +19,7 @@ import {
   CARDIO_TYPES,
   cardioSchema,
   cardioSeconds,
+  parameterLabels,
   cardioStages,
   makeCardio,
   modalitySchema,
@@ -32,13 +33,6 @@ import { errorMessage } from '@/domain/schemas';
 const uid = () => crypto.randomUUID();
 const clock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
-const parameterLabels = {
-  distance: 'Distância (km)',
-  speed: 'Velocidade (km/h)',
-  incline: 'Inclinação (%)',
-  resistance: 'Resistência (nível do equipamento)',
-  cadence: 'Cadência (rpm)',
-} as const;
 export function CardioLibrary() {
   const data = useDemo(),
     repository = useRepository();
@@ -747,11 +741,17 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
             transform="rotate(-90 60 60)"
           />
         </svg>
-        <div className="cardio-clock" aria-label="Tempo decorrido de cardio">
+        <div
+          className="cardio-clock"
+          role="timer"
+          aria-live="off"
+          aria-label="Tempo decorrido de cardio"
+        >
           {clock(elapsed)}
         </div>
         <span className="cardio-clock-caption">
-          Tempo em movimento · {clock(cardioSeconds(cardio))} planejados
+          {running ? 'Em andamento' : elapsed > 0 ? 'Pausado' : 'Pronto para começar'} ·{' '}
+          {clock(cardioSeconds(cardio))} planejados
         </span>
       </div>
       <ol className="cardio-stage-rail" aria-label="Etapas da sessão">
@@ -777,17 +777,16 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
       <p>Próxima: {stages[stage + 1]?.type ?? 'Conclusão'}. A passagem de etapa é manual.</p>
       <div className="form-actions">
         <Button
-          disabled={running}
           onClick={() => {
-            start.current = performance.now();
-            setRunning(true);
-            setSuccess('');
+            if (running) pause();
+            else {
+              start.current = performance.now();
+              setRunning(true);
+              setSuccess('');
+            }
           }}
         >
-          {elapsed ? 'Retomar cardio' : 'Iniciar cardio'}
-        </Button>
-        <Button variant="outline" disabled={!running} onClick={pause}>
-          Pausar cardio
+          {running ? 'Pausar cardio' : elapsed ? 'Retomar cardio' : 'Iniciar cardio'}
         </Button>
         <Button
           variant="outline"

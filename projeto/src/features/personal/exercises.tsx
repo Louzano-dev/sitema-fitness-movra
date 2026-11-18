@@ -4,7 +4,8 @@ import { beginSharedSurface } from '@/components/shared-surface';
 import { CardioLibrary } from '../cardio';
 import { Activity, Search } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
-import { EXERCISES } from '@/domain/exercise-catalog';
+import { OwnExerciseForm } from '../studio-library';
+import { studioCatalog } from '@/domain/exercise-catalog';
 import { EmptyState, PageHeader, Panel } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,8 @@ import { normalize } from '@/domain/selectors';
 export function ExercisesPage() {
   const data = useDemo();
   const repository = useRepository();
+  const catalog = studioCatalog(data.exercises);
+  const [saved, setSaved] = useState('');
   const [pattern, setPattern] = useState('all');
   const [category, setCategory] = useState('all');
   const [scope, setScope] = useState('all');
@@ -29,7 +32,7 @@ export function ExercisesPage() {
   const [pageSize, setPageSize] = useState({ key: '', count: 24 });
   const filterKey = [pattern, category, scope, query, group, equipment].join('|');
   const limit = pageSize.key === filterKey ? pageSize.count : 24;
-  const exercises = EXERCISES.filter(
+  const exercises = catalog.filter(
     (e) =>
       normalize(`${e.name} ${e.tags.join(' ')}`).includes(normalize(query)) &&
       (pattern === 'all' || e.pattern === pattern) &&
@@ -48,9 +51,21 @@ export function ExercisesPage() {
         title="O repertório de cada movimento."
         description="Consulte instruções e equipamentos para compor suas prescrições. Catálogo demonstrativo, sem vídeos ou prescrição automática."
       />
+      <OwnExerciseForm
+        saved={(id) => {
+          setQuery(repository.getSnapshot().exercises.find((e) => e.id === id)?.name ?? '');
+          setScope('all');
+          setCategory('all');
+          setPattern('all');
+          setEquipment('all');
+          setGroup('all');
+          setSaved('Exercício próprio salvo na biblioteca.');
+        }}
+      />
+      {saved && <p role="status">{saved}</p>}
       <CardioLibrary />
       <p className="form-help">
-        {EXERCISES.length} exercícios e variações disponíveis. Busque também pelo músculo, como
+        {catalog.length} exercícios e variações disponíveis. Busque também pelo músculo, como
         peitoral, bíceps, glúteos ou panturrilhas.
       </p>
       <div className="toolbar mb-6 rounded-xl border bg-white">
@@ -76,7 +91,7 @@ export function ExercisesPage() {
           onChange={(e) => setGroup(e.target.value)}
         >
           <option value="all">Todos os grupos</option>
-          {[...new Set(EXERCISES.map((e) => e.group))].map((g) => (
+          {[...new Set(catalog.map((e) => e.group))].map((g) => (
             <option key={g}>{g}</option>
           ))}
         </select>
@@ -90,7 +105,7 @@ export function ExercisesPage() {
           onChange={(e) => setEquipment(e.target.value)}
         >
           <option value="all">Todos os equipamentos</option>
-          {[...new Set(EXERCISES.map((e) => e.equipment))].map((g) => (
+          {[...new Set(catalog.map((e) => e.equipment))].map((g) => (
             <option key={g}>{g}</option>
           ))}
         </select>
@@ -98,13 +113,13 @@ export function ExercisesPage() {
           label="Padrão de movimento"
           value={pattern}
           change={setPattern}
-          options={[...new Set(EXERCISES.map((e) => e.pattern))]}
+          options={[...new Set(catalog.map((e) => e.pattern))]}
         />
         <FieldFilter
           label="Categoria de exercício"
           value={category}
           change={setCategory}
-          options={[...new Set(EXERCISES.map((e) => e.category))]}
+          options={[...new Set(catalog.map((e) => e.category))]}
         />
         <FieldFilter
           label="Favoritos e recentes"
@@ -173,12 +188,18 @@ export function ExercisesPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <p>{e.instructions}</p>
+                  {!e.id.startsWith('own-') && (
+                    <p className="form-help">
+                      Orientação genérica de catálogo. A demonstração técnica deste exercício
+                      aguarda validação profissional.
+                    </p>
+                  )}
                   <p>{e.technical}</p>
                   <p>Grupos secundários: {e.secondary.join(', ')}</p>
                   <p>
                     Alternativas no catálogo:{' '}
                     {e.alternatives
-                      .map((id) => EXERCISES.find((exercise) => exercise.id === id)?.name)
+                      .map((id) => catalog.find((exercise) => exercise.id === id)?.name)
                       .join(', ') || 'Nenhuma cadastrada'}
                   </p>
                   <p className="form-help">

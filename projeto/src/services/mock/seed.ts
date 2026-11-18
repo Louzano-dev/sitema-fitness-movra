@@ -283,5 +283,6 @@ export function createSeed(): DemoState {
       },
     },
     drafts: {},
+    workoutCheckpoints: {},
   };
 }

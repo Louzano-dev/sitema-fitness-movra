@@ -84,13 +84,17 @@ for (const role of ['personal', 'aluno', 'admin'])
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await login(page, role);
-    const links = await page
-      .locator('.desktop-sidebar .sidebar-nav a')
-      .evaluateAll((items) =>
-        items.map((a) => ({ text: a.textContent?.trim() ?? '', href: a.getAttribute('href') })),
-      );
+    const links = await page.locator('.desktop-sidebar .sidebar-nav a').evaluateAll((items) =>
+      items.map((a) => ({
+        text: a.getAttribute('aria-label') ?? '',
+        href: a.getAttribute('href'),
+      })),
+    );
     for (const link of links) {
-      await page.locator('.desktop-sidebar .sidebar-nav a').filter({ hasText: link.text }).click();
+      await page
+        .locator('.desktop-sidebar')
+        .getByRole('link', { name: link.text, exact: true })
+        .click();
       await expect(page.locator('main h1')).toBeVisible();
       await expect(page.locator('.app-shell')).toBeVisible();
     }
@@ -136,6 +140,26 @@ test('treino mantém séries, feedback e histórico', async ({ page }) => {
   await page.getByRole('link', { name: 'Revisar histórico' }).click();
   await expect(page.locator('.history-row')).toHaveCount(4);
 });
+test('retoma as séries e soma apenas o tempo ativo após sair da ficha', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await login(page, 'aluno');
+  await page.clock.setFixedTime(new Date('2026-11-12T12:00:00Z'));
+  await page.getByRole('link', { name: 'Começar meu treino' }).click();
+  await page.locator('.set-check input').first().check();
+  const sessionUrl = page.url();
+  await page.clock.setFixedTime(new Date('2026-11-12T12:02:00Z'));
+  await page.getByRole('button', { name: 'Pausar sessão', exact: true }).click();
+  await navigatePage(page, 'Histórico');
+  await page.clock.setFixedTime(new Date('2026-11-12T15:00:00Z'));
+  await page.goBack();
+  await expect(page).toHaveURL(sessionUrl);
+  await expect(page.locator('.set-check input').first()).toBeChecked();
+  for (const check of await page.locator('.set-check input').all()) await check.check();
+  await page.clock.setFixedTime(new Date('2026-11-12T15:01:00Z'));
+  await page.getByRole('button', { name: 'Concluir treino', exact: true }).click();
+  await expect(page.locator('.completion')).toContainText('3 min.');
+});
+
 test('responsividade e teclado em entrada e formulário', async ({ page }) => {
   for (const width of [360, 768, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 });
@@ -251,12 +275,11 @@ for (const role of ['personal', 'aluno', 'admin'])
     test.setTimeout(120000);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await login(page, role);
-    const names = await page.locator('.desktop-sidebar .sidebar-nav a').allTextContents();
+    const names = await page
+      .locator('.desktop-sidebar .sidebar-nav a')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('aria-label')!));
     for (const name of names) {
-      await page
-        .locator('.desktop-sidebar .sidebar-nav a')
-        .filter({ hasText: name.trim() })
-        .click();
+      await page.locator('.desktop-sidebar').getByRole('link', { name, exact: true }).click();
       await expect(page.locator('main h1')).toBeVisible();
       const result = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])

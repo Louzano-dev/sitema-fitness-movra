@@ -10,6 +10,7 @@ import { saveProgram, approveProgram } from '@/services/experience-service';
 import { saveCardioRecord } from '@/services/cardio-service';
 import { MockRepository } from '@/services/mock/repository';
 import { generateProgram } from '@/domain/training-engine';
+import { estimateDay } from '@/domain/training-plan';
 import { type Program, type Questionnaire } from '@/domain/experience';
 import { STORAGE_KEY } from '@/services/local-storage';
 const manual = (): Program => ({
@@ -147,10 +148,14 @@ describe('Cardio profissional', () => {
       },
     };
     const result = generateProgram(q);
+    expect(generateProgram(q)).toEqual(result);
     expect(result.kind).toBe('proposal');
     if (result.kind === 'proposal') {
       expect(result.program.days[0].cardio?.[0].type).toBe('Contínuo');
-      expect(result.program.days[0].exercises.length).toBeLessThanOrEqual(3);
+      const duration = estimateDay(result.program.days[0]);
+      expect(duration.cardio).toBe(600);
+      expect(duration.strength).toBeLessThanOrEqual(30 * 60);
+      expect(duration.minutes).toBeLessThanOrEqual(q.minutes);
     }
     expect(generateProgram({ ...q, cardio: { ...q.cardio!, minutes: 40 } }).kind).toBe('review');
     expect(generateProgram({ ...q, age: 16 }).kind).toBe('review');

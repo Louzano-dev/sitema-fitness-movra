@@ -11,7 +11,6 @@ import {
   type Meal,
 } from '@/domain/experience';
 import { FOODS } from '@/domain/foods';
-import { EXERCISES } from '@/domain/exercise-catalog';
 import { reviewReasons } from '@/domain/training-engine';
 import type { DemoState, Environment } from '@/domain/types';
 export const newId = () => crypto.randomUUID();
@@ -48,7 +47,9 @@ export function approveProgram(
     throw new Error('Organize os dias da semana sem duplicações antes de aprovar.');
   if (
     program.days.some((day) =>
-      day.exercises.some((row) => !EXERCISES.some((e) => e.id === row.exerciseId)),
+      day.exercises.some(
+        (row) => !state.exercises.some((e) => e.id === row.exerciseId && !e.id.includes('--')),
+      ),
     )
   )
     throw new Error('Há exercícios sem catálogo.');

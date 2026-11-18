@@ -8,6 +8,9 @@ import { errorMessage } from '@/domain/schemas';
 import { EmptyState, PageHeader, Panel } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { estimateDay } from '@/domain/training-plan';
+import { trainingWeek } from '@/domain/training-week';
+import { DEMO_DATE } from '@/domain/types';
 import type { Workout } from '@/domain/types';
 import { normalize, formatDate } from '@/domain/selectors';
 export function WorkoutCards({
@@ -21,6 +24,7 @@ export function WorkoutCards({
   const repository = useRepository();
   const [feedback, setFeedback] = useState('');
   const [failure, setFailure] = useState('');
+  const completed = trainingWeek(workouts, data.sessions, DEMO_DATE).completed;
   if (!workouts.length)
     return (
       <Panel>
@@ -44,11 +48,24 @@ export function WorkoutCards({
               <span className="workout-card-icon">
                 <ClipboardList size={21} aria-hidden />
               </span>
-              <span className="tag">Prescrição demonstrativa</span>
+              <span className="tag">
+                {studentView
+                  ? data.drafts[w.id]
+                    ? 'Em andamento'
+                    : completed.has(w.id)
+                      ? 'Concluído nesta semana'
+                      : 'Disponível'
+                  : 'Prescrição demonstrativa'}
+              </span>
             </div>
             <h2>{w.title}</h2>
             {w.weekday && <p className="eyebrow">{w.weekday} · versão revisada</p>}
-            {!!w.cardio?.length && <p>{w.cardio.length} sessões de cardio · {w.cardio.map(c=>c.modality.name).join(', ')}</p>}
+            {!!w.cardio?.length && (
+              <p>
+                {w.cardio.length} sessões de cardio ·{' '}
+                {w.cardio.map((c) => c.modality.name).join(', ')}
+              </p>
+            )}
             <p>
               {studentView
                 ? 'Uma etapa de cada vez.'
@@ -59,7 +76,8 @@ export function WorkoutCards({
                 <Layers size={14} aria-hidden />
                 {w.exercises.length} exercícios
               </span>
-              <span>{w.exercises.reduce((sum, e) => sum + e.sets, 0)} séries</span>
+              <span>{estimateDay(w).sets} séries</span>
+              <span>≈ {estimateDay(w).minutes} min</span>
             </div>
             <div className="workout-card-footer">
               {!studentView && (

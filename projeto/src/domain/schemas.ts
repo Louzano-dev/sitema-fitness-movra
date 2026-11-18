@@ -12,6 +12,8 @@ export const studentSchema = z.object({
 });
 export type StudentInput = z.infer<typeof studentSchema>;
 export const prescriptionSchema = z.object({
+  rir: z.number().int().min(0).max(10).optional(),
+  rpe: z.number().min(0).max(10).optional(),
   repsMax: z.number().int().min(1).max(100).optional(),
   notes: z.string().max(500).optional(),
   rowId: z.string().optional(),

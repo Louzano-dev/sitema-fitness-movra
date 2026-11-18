@@ -1,8 +1,10 @@
 # MOVRA — Treinamento e diário alimentar
 
-Biblioteca ampliada para **319 exercícios e variações**, com busca, filtros e carregamento em lotes. O Personal pode informar observações opcionais por exercício e para o treino inteiro; as instruções aparecem ao aluno durante a execução. [Lista completa do catálogo](projeto/docs/exercicios.md). O catálogo não pretende abranger todos os movimentos existentes, e a ampliação não altera o conjunto de sugestões automáticas do gerador.
+Ative **Modo guiado** acima do conteúdo para receber orientações por tarefa. O Studio reúne as opções de criar, revisar e atribuir fichas. No diário alimentar, **Registrar e adicionar outro** permite lançar vários alimentos na mesma refeição. [Uso e validação da experiência universal](projeto/docs/experiencia-universal.md).
 
-Refinamento mais recente: dashboard com composição em áreas, transições geométricas aluno/perfil, treino/editor, exercício/instruções e alimento/editor; valores nutricionais animados e novas etapas visuais do cardio. [Detalhes e validação](projeto/docs/interaction-refinement.md).
+Biblioteca ampliada para **319 exercícios e variações**, com busca, filtros e carregamento em lotes. O Personal pode informar observações opcionais por exercício e para o treino inteiro; as instruções aparecem ao aluno durante a execução. [Lista completa do catálogo](projeto/docs/exercicios.md). O Studio usa 62 movimentos classificados para gerar propostas por nível, divisão, equipamento e tempo disponível. [Regras, exemplos para os três níveis e referências](projeto/docs/motor-treinos-v2.md).
+
+O dashboard e os editores usam transições entre aluno e perfil, treino e editor, exercício e instruções, alimento e quantidade. [Detalhes das interações](projeto/docs/interaction-refinement.md).
 
 A MOVRA é um protótipo frontend para Personal Trainers e alunos/atletas. Reúne gestão de alunos, planejamento e execução de treinos, cardio, evolução física, agenda e um diário alimentar individual. Possui também um ambiente administrativo demonstrativo.
 
@@ -49,7 +51,7 @@ O Fuel permite:
 
 - Registrar refeições e alimentos por data, editar quantidades, excluir, duplicar e reutilizar registros.
 - Pesquisar alimentos, usar favoritos, cadastrar produtos próprios e criar receitas com rendimento final informado.
-- Consultar automaticamente estimativas de energia, proteínas, carboidratos e gorduras, sem opção de ocultar.
+- Adultos podem consultar estimativas de energia e macronutrientes. A exibição começa ativa e respeita a preferência do próprio perfil. Para menores ou pessoas sem idade registrada, o diário apresenta refeições e quantidades sem contagem individualizada.
 - Usar gramas e porções específicas documentadas para cada alimento.
 - Consultar histórico e exportar resumo demonstrativo em JSON.
 

@@ -161,7 +161,7 @@ export const EXERCISES: CatalogExercise[] = entries.map(
           : 'Força',
   }),
 );
-export const GENERATOR_EXERCISES = EXERCISES.slice();
+export const ORIGINAL_EXERCISES = EXERCISES.slice();
 const knownNames = new Set(EXERCISES.map((e) => exerciseSlug(e.name)));
 for (const exercise of EXPANDED_EXERCISES) {
   if (knownNames.has(exerciseSlug(exercise.name))) continue;
@@ -174,4 +174,20 @@ for (const exercise of EXPANDED_EXERCISES) {
       .slice(0, 4)
       .map((e) => e.id),
   });
+}
+
+export function studioCatalog(exercises: Exercise[]): CatalogExercise[] {
+  const custom = exercises
+    .filter((e) => e.id.startsWith('own-') && !e.id.includes('--'))
+    .map((e) => ({
+      ...e,
+      pattern: e.pattern ?? 'Personalizado',
+      category: 'Personalizado',
+      requires: [e.equipment],
+      tags: [e.group, e.equipment, e.pattern ?? 'Personalizado'],
+      secondary: [],
+      alternatives: [],
+      technical: 'Orientação cadastrada pelo personal.',
+    }));
+  return [...EXERCISES, ...custom];
 }

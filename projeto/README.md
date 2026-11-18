@@ -4,7 +4,7 @@ Fuel individual: o Personal registra sua própria alimentação em uma identidad
 
 Interface refinada com sidebar compacta/expandida, indicador animado, temas claro/escuro persistentes, transições de navegação e reordenação GSAP Flip. Veja [Premium Motion](docs/premium-motion-release.md) para análise da referência, testes e limites.
 
-Fuel: as estimativas nutricionais são sempre exibidas em todos os perfis, sem controle de mostrar/ocultar. A antiga preferência salva não altera a exibição. Essa mudança substitui a política de visualização opcional descrita nas entregas históricas; o compartilhamento com o Personal continua independente.
+No Fuel, o adulto encontra a preferência de estimativas numéricas nas configurações do próprio perfil. O diário de menores ou de pessoas sem idade registrada permite registrar refeições e quantidades sem exibir contagem individualizada.
 
 Novo: [cardio integrado ao Studio](docs/cardio-4.1-release.md), com biblioteca, editor de intervalos, aprovação/atribuição, cronômetro e histórico por aluno. O HTML independente continua sendo a forma direta de uso.
 
@@ -24,6 +24,8 @@ npm.cmd run dev
 Acesse http://localhost:3000/entrar somente para manutenção com Next.js. Para gerar o HTML independente: `npm.cmd run build:portable`. Nenhum desses comandos é necessário para usar o `index.html` pronto.
 
 ## Studio e Fuel
+
+Consulte a [documentação do motor de treinos 2.0](docs/motor-treinos-v2.md) para reproduzir exemplos, entender as estimativas e revisar a entrega ao aluno.
 
 O Personal acessa **MOVRA Studio**: questionário em seis etapas, geração determinística por regras versionadas, editor de dias/exercícios, comparação de regeneração, modelos, revisão e aprovação de versões, atribuição ao aluno correto. Contextos especiais seguem planejamento manual supervisionado; o gerador não é IA nem validação clínica.
 

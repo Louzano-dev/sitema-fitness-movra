@@ -1,0 +1,102 @@
+.planning-entry {
+  margin-bottom: 1.25rem;
+}
+.planning-entry .studio-launch {
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+}
+.planning-entry .studio-launch button {
+  padding: clamp(1rem, 2.4vw, 2rem);
+}
+.planning-entry .studio-launch strong {
+  font-size: clamp(1.2rem, 2vw, 1.65rem);
+}
+.planning-entry .form-actions {
+  margin: 0 0 1rem;
+}
+.plan-day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-block: 1.5rem 0.75rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--border);
+}
+.studio-exercise > details > .field {
+  margin-block: 0.75rem;
+}
+.app-shell .studio-exercise .prescription-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.studio-editor .day-tab span {
+  white-space: normal;
+  line-height: 1.5;
+}
+.studio-editor .studio-advanced p {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.workout-outline {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.875rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.workout-outline .outline-meta {
+  font-size: 0.875rem;
+  margin-block: 0.25rem 0.75rem;
+  color: var(--muted-foreground);
+}
+.workout-outline ol {
+  padding-inline-start: 1.6rem;
+  list-style: decimal;
+}
+.workout-outline li {
+  padding: 0.65rem 0.25rem;
+  border-block-start: 1px solid var(--border);
+}
+.workout-outline li > :is(strong, span, small) {
+  display: block;
+}
+.workout-outline li small {
+  margin-block-start: 0.25rem;
+  color: var(--muted-foreground);
+}
+.training-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  border-inline-start: 4px solid #b8da7b;
+  background: var(--popover);
+  color: var(--foreground);
+}
+.studio-advanced form {
+  margin: 1rem 0;
+}
+.studio-advanced form label {
+  display: grid;
+  gap: 0.35rem;
+}
+@media (max-width: 640px) {
+  .planning-entry .studio-launch {
+    grid-template-columns: 1fr;
+  }
+  .app-shell .studio-exercise .prescription-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .plan-day-heading button {
+    min-height: 44px;
+  }
+  .studio-exercise .form-actions {
+    gap: 0.25rem;
+  }
+  .plan-day-heading h2 {
+    overflow-wrap: anywhere;
+  }
+}

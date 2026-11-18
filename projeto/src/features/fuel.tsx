@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
+import { useGuide } from '@/components/guided-mode';
 import { beginSharedSurface } from '@/components/shared-surface';
 import { AnimatedNumber } from '@/components/animated-number';
 import Link from 'next/link';
-import { Apple, Plus, Utensils } from 'lucide-react';
+import { Plus, Utensils } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
 import { useDemoSession } from '@/components/demo-session';
 import { PageHeader, Panel, Field, Feedback, EmptyState, Stat } from '@/components/shared';
@@ -82,6 +83,7 @@ function Numbers({ values }: { values: Nutrients }) {
   );
 }
 export function FuelPage({ personal: personalAccount = false }: { personal?: boolean }) {
+  const { enabled: guided } = useGuide();
   const personal = false;
   const data = useDemo();
   const repository = useRepository();
@@ -102,8 +104,8 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [ingredients, setIngredients] = useState<{ foodId: string; grams: number }[]>([]);
-  const minor = false;
-  const showNumbers = true;
+  const minor = !personalAccount && (data.experience.ages[id] ?? 0) < 18;
+  const showNumbers = !minor && (data.experience.preferences[id]?.showNumbers ?? true);
   const allowed = true;
   const foods = foodsFor(data, id);
   const history = sharedMeals(data, personalAccount ? 'personal' : 'aluno', id);
@@ -147,8 +149,19 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
     setUnit(item?.unit ?? 'g');
     setEditing(item?.id ?? null);
     setQuery('');
+    setCategory('all');
+    setOnlyRecent(false);
+    setOnlyFavorites(false);
     setError('');
     setModal('item');
+    setFeedback('');
+  }
+  function chooseFood(foodId: string) {
+    setSelectedFood(foodId);
+    setSelectingFood(false);
+    setQuantity(100);
+    setUnit('g');
+    requestAnimationFrame(() => document.getElementById('food-quantity')?.focus());
   }
   function duplicate(meal: Meal) {
     act(() => {
@@ -197,19 +210,30 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
     });
   }
   const dates = [...new Set([...history.map((meal) => meal.date), date])].sort().slice(-7);
+  const recentFoods = [
+    ...new Set(
+      [...history]
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .flatMap((meal) => meal.items.map((item) => item.foodId)),
+    ),
+  ].slice(0, 5);
   const foodResults = foods.filter(
     (food) =>
       normalize(`${food.name} ${food.brand}`).includes(normalize(query)) &&
       (category === 'all' || food.category === category) &&
       (!onlyFavorites || favorites.includes(food.id)) &&
-      (!onlyRecent || history.some((meal) => meal.items.some((item) => item.foodId === food.id))),
+      (!onlyRecent || recentFoods.includes(food.id)),
   );
   return (
     <>
       <PageHeader
         eyebrow="MOVRA Fuel · registro alimentar"
-        title={personalAccount ? 'Meu diário alimentar' : 'Um registro do seu dia.'}
-        description="Diário informativo com estimativas de composição. Sem dieta, metas calóricas, julgamentos ou compensação com exercícios."
+        title="Meu diário alimentar"
+        description={
+          minor
+            ? 'Registre alimentos, quantidades e refeições no seu diário individual.'
+            : 'Registre o que consumiu. As estimativas se referem aos alimentos ingeridos. Cada perfil consulta somente o próprio diário.'
+        }
         action={
           !personal ? (
             <Button
@@ -224,17 +248,6 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
           ) : undefined
         }
       />
-      <div className="module-hero">
-        <Apple size={32} aria-hidden />
-        <div>
-          <p className="eyebrow">Alimentação, com contexto</p>
-          <h2>Registrar para conversar.</h2>
-          <p>
-            Registre sua alimentação. As estimativas representam energia e nutrientes ingeridos, não
-            gasto com exercícios. O personal não acessa o diário dos alunos.
-          </p>
-        </div>
-      </div>
       <div className="toolbar module-toolbar">
         <Field label="Data do diário" htmlFor="fuel-date">
           <Input
@@ -256,10 +269,7 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
         />
       ) : (
         <>
-          <PageMotion
-            focusPage={false}
-            route={`fuel-${id}-${date}-${meals.length}-${Object.values(total.values).join('-')}`}
-          >
+          <PageMotion focusPage={false} route={`fuel-${id}-${date}`}>
             <div className="stats-grid">
               <Stat
                 label="Refeições registradas"
@@ -306,57 +316,60 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
             )}
           </PageMotion>
           {!personal && (
-            <div className="module-nav">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setError('');
-                  setModal('meal');
-                }}
-              >
-                Adicionar refeição
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setError('');
-                  setModal('food');
-                }}
-              >
-                Cadastrar alimento
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setError('');
-                  setIngredients([]);
-                  setModal('recipe');
-                }}
-              >
-                Criar receita
-              </Button>
-              <Field label="Copiar refeição anterior ou favorita" htmlFor="fuel-copy">
-                <select
-                  id="fuel-copy"
-                  className="native-select"
-                  value=""
-                  onChange={(e) => {
-                    const meal = history.find((meal) => meal.id === e.target.value);
-                    if (meal) duplicate(meal);
+            <details className="studio-tools" open={!guided}>
+              <summary>Organizar refeições e receitas</summary>
+              <div className="module-nav">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setError('');
+                    setModal('meal');
                   }}
                 >
-                  <option value="">Escolher refeição</option>
-                  {history
-                    .filter((meal) => meal.items.length > 0)
-                    .map((meal) => (
-                      <option key={meal.id} value={meal.id}>
-                        {meal.favorite ? '★ ' : ''}
-                        {meal.date} · {meal.name}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-            </div>
+                  Adicionar refeição
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setError('');
+                    setModal('food');
+                  }}
+                >
+                  Cadastrar alimento
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setError('');
+                    setIngredients([]);
+                    setModal('recipe');
+                  }}
+                >
+                  Criar receita
+                </Button>
+                <Field label="Copiar refeição anterior ou favorita" htmlFor="fuel-copy">
+                  <select
+                    id="fuel-copy"
+                    className="native-select"
+                    value=""
+                    onChange={(e) => {
+                      const meal = history.find((meal) => meal.id === e.target.value);
+                      if (meal) duplicate(meal);
+                    }}
+                  >
+                    <option value="">Escolher refeição</option>
+                    {history
+                      .filter((meal) => meal.items.length > 0)
+                      .map((meal) => (
+                        <option key={meal.id} value={meal.id}>
+                          {meal.favorite ? '★ ' : ''}
+                          {meal.date} · {meal.name}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+              </div>
+            </details>
           )}
           <div className="fuel-meals">
             {meals.map((meal) => (
@@ -651,50 +664,64 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </Field>
-              <div className="form-grid">
-                <Field label="Categoria alimentar" htmlFor="food-category">
-                  <select
-                    id="food-category"
-                    className="native-select"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                  >
-                    <option value="all">Todas as categorias</option>
-                    {[...new Set(foods.map((food) => food.category))].map((value) => (
-                      <option key={value}>{value}</option>
-                    ))}
-                  </select>
-                </Field>
-                <label className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={onlyFavorites}
-                    onChange={(e) => setOnlyFavorites(e.target.checked)}
-                  />
-                  Somente favoritos
-                </label>
-                <label className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={onlyRecent}
-                    onChange={(event) => setOnlyRecent(event.target.checked)}
-                  />
-                  Utilizados recentemente
-                </label>
-              </div>
+              {!query &&
+                !onlyRecent &&
+                !onlyFavorites &&
+                category === 'all' &&
+                recentFoods.length > 0 && (
+                  <div className="food-shortcuts">
+                    <strong>Usados recentemente</strong>
+                    {recentFoods
+                      .map((id) => foods.find((item) => item.id === id))
+                      .filter((item) => !!item)
+                      .map((item) => (
+                        <Button key={item.id} variant="outline" onClick={() => chooseFood(item.id)}>
+                          {item.name}
+                        </Button>
+                      ))}
+                  </div>
+                )}
+              <details className="food-filters">
+                <summary>Filtrar por categoria, favoritos ou recentes</summary>
+                <div className="form-grid">
+                  <Field label="Categoria alimentar" htmlFor="food-category">
+                    <select
+                      id="food-category"
+                      className="native-select"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <option value="all">Todas as categorias</option>
+                      {[...new Set(foods.map((food) => food.category))].map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={onlyFavorites}
+                      onChange={(e) => setOnlyFavorites(e.target.checked)}
+                    />
+                    Somente favoritos
+                  </label>
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={onlyRecent}
+                      onChange={(event) => setOnlyRecent(event.target.checked)}
+                    />
+                    Utilizados recentemente
+                  </label>
+                </div>
+              </details>
               <Field label="Alimento da biblioteca" htmlFor="food-select">
                 <select
                   id="food-select"
                   className="native-select"
                   size={4}
                   value={selectedFood}
-                  onChange={(e) => {
-                    setSelectedFood(e.target.value);
-                    setUnit('g');
-                    setQuantity(100);
-                    setSelectingFood(false);
-                    requestAnimationFrame(() => document.getElementById('food-quantity')?.focus());
-                  }}
+                  onChange={(e) => chooseFood(e.target.value)}
                 >
                   {foodResults.map((food) => (
                     <option key={food.id} value={food.id}>
@@ -706,12 +733,12 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
               </Field>
               {!foodResults.length && (
                 <p role="status">
-                  Nenhum alimento corresponde à busca. Feche e use Cadastrar alimento.
+                  Nenhum alimento encontrado. Tente outro nome ou limpe os filtros.
                 </p>
               )}
             </>
           )}
-          {food && (
+          {food && !selectingFood && (
             <>
               <div className="selected-food">
                 <strong>{food.name}</strong>
@@ -754,95 +781,115 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
               </details>
             </>
           )}
-          <form
-            className="form-stack"
-            onSubmit={(e) => {
-              e.preventDefault();
-              act(() => {
-                if (!food) throw new Error('Selecione um alimento.');
-                const base = history.find((meal) => meal.id === target) ?? {
-                  id: '',
-                  studentId: id,
-                  date,
-                  name: 'Lanche',
-                  note: '',
-                  favorite: false,
-                  items: [],
-                };
-                const item = { id: editing ?? newId(), foodId: food.id, quantity, unit, grams: 0 };
-                saveMeal(
-                  repository,
-                  {
-                    ...base,
-                    items: editing
-                      ? base.items.map((row) => (row.id === editing ? item : row))
-                      : [...base.items, item],
-                  },
-                  id,
-                );
-                setModal(null);
-                setFeedback('Alimento registrado. O resumo foi atualizado.');
-              });
-            }}
-          >
-            <Field label="Refeição de destino" htmlFor="food-target">
-              <select
-                id="food-target"
-                className="native-select"
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-                disabled={!!editing}
-              >
-                <option value="">Nova refeição · Lanche</option>
-                {meals.map((meal) => (
-                  <option key={meal.id} value={meal.id}>
-                    {meal.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <div className="form-grid">
-              <Field label="Quantidade" htmlFor="food-quantity">
-                <Input
-                  id="food-quantity"
-                  type="number"
-                  min="0.01"
-                  max={10000}
-                  step="any"
-                  required
-                  value={Number.isFinite(quantity) ? quantity : ''}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                />
-              </Field>
-              <Field label="Unidade da quantidade" htmlFor="food-unit">
+          {food && !selectingFood && (
+            <form
+              className="form-stack"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const another =
+                  ((e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null)?.value ===
+                  'another';
+                act(() => {
+                  if (!food) throw new Error('Selecione um alimento.');
+                  const base = history.find((meal) => meal.id === target) ?? {
+                    id: '',
+                    studentId: id,
+                    date,
+                    name: 'Lanche',
+                    note: '',
+                    favorite: false,
+                    items: [],
+                  };
+                  const item = {
+                    id: editing ?? newId(),
+                    foodId: food.id,
+                    quantity,
+                    unit,
+                    grams: 0,
+                  };
+                  const saved = saveMeal(
+                    repository,
+                    {
+                      ...base,
+                      items: editing
+                        ? base.items.map((row) => (row.id === editing ? item : row))
+                        : [...base.items, item],
+                    },
+                    id,
+                  );
+                  if (another) {
+                    openItem(saved.id);
+                    requestAnimationFrame(() => document.getElementById('food-query')?.focus());
+                  } else setModal(null);
+                  setFeedback(food.name + ' registrado. O resumo foi atualizado.');
+                });
+              }}
+            >
+              <Field label="Refeição de destino" htmlFor="food-target">
                 <select
-                  id="food-unit"
+                  id="food-target"
                   className="native-select"
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  disabled={!!editing}
                 >
-                  <option value="g">Gramas</option>
-                  {food?.portions.map((portion) => (
-                    <option key={portion.label} value={portion.label}>
-                      {portion.label} · {portion.grams} g
+                  <option value="">Nova refeição · Lanche</option>
+                  {meals.map((meal) => (
+                    <option key={meal.id} value={meal.id}>
+                      {meal.name}
                     </option>
                   ))}
                 </select>
               </Field>
-            </div>
-            {grams !== null && (
-              <p className="form-help">
-                Quantidade equivalente: {display(grams)} g. Não se presume conversão de ml para g.
-              </p>
-            )}
-            {food && grams !== null && showNumbers && (
-              <Numbers values={foodNutrients(food, grams)} />
-            )}
-            <Feedback error={error} />
-            <Button type="submit" disabled={!food}>
-              {editing ? 'Atualizar alimento' : 'Registrar alimento'}
-            </Button>
-          </form>
+              <div className="form-grid">
+                <Field label="Quantidade" htmlFor="food-quantity">
+                  <Input
+                    id="food-quantity"
+                    type="number"
+                    min="0.01"
+                    max={10000}
+                    step="any"
+                    required
+                    value={Number.isFinite(quantity) ? quantity : ''}
+                    onChange={(e) => setQuantity(e.target.valueAsNumber)}
+                  />
+                </Field>
+                <Field label="Unidade da quantidade" htmlFor="food-unit">
+                  <select
+                    id="food-unit"
+                    className="native-select"
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                  >
+                    <option value="g">Gramas</option>
+                    {food?.portions.map((portion) => (
+                      <option key={portion.label} value={portion.label}>
+                        {portion.label} · {portion.grams} g
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              {grams !== null && (
+                <p className="form-help">
+                  Quantidade equivalente: {display(grams)} g. Não se presume conversão de ml para g.
+                </p>
+              )}
+              {food && grams !== null && showNumbers && (
+                <Numbers values={foodNutrients(food, grams)} />
+              )}
+              <Feedback error={error} />
+              <Button type="submit" disabled={!food}>
+                {editing ? 'Atualizar alimento' : 'Registrar alimento'}
+              </Button>
+              {!editing && (
+                <Button type="submit" value="another" variant="outline">
+                  Registrar e adicionar outro
+                </Button>
+              )}
+            </form>
+          )}
+          {selectingFood && feedback && <p role="status">{feedback}</p>}
         </DialogContent>
       </Dialog>
       <Dialog

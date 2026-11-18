@@ -1,4 +1,12 @@
 import { z } from 'zod';
+export const parameterLabels = {
+  distance: 'Distância (km)',
+  speed: 'Velocidade (km/h)',
+  incline: 'Inclinação (%)',
+  resistance: 'Resistência (nível do equipamento)',
+  cadence: 'Cadência (rpm)',
+} as const;
+
 export const CARDIO_TYPES = [
   'Contínuo',
   'Intervalado',
@@ -155,9 +163,9 @@ export const cardioQuestionSchema = z.object({
   experience: z.string().max(150),
   notes: z.string().max(500),
 });
-export function makeCardio(modality = CARDIO_CATALOG[0]): Cardio {
+export function makeCardio(modality = CARDIO_CATALOG[0], id: string = crypto.randomUUID()): Cardio {
   return {
-    id: crypto.randomUUID(),
+    id,
     modality: structuredClone(modality),
     type: 'Contínuo',
     position: 'Depois',

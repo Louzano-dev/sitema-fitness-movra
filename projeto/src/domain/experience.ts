@@ -32,6 +32,24 @@ export const GOALS = [
   'Condicionamento geral',
   'Manutenção da atividade física',
 ] as const;
+export const SPLITS = [
+  'Full body',
+  'A/B',
+  'A/B/C',
+  'Superior/inferior',
+  'Upper/Lower',
+  'Push/Pull/Legs',
+  'Padrões de movimento',
+  'Personalizada',
+] as const;
+export const DAY_FOCUS = [
+  'Corpo inteiro',
+  'Superior',
+  'Inferior',
+  'Empurrar',
+  'Puxar',
+  'Mobilidade',
+] as const;
 export const questionnaireSchema = z
   .object({
     studentId: z.string().min(1),
@@ -49,10 +67,12 @@ export const questionnaireSchema = z
     avoidPatterns: z.array(z.string()),
     notes: z.string().max(1000),
     specialContext: z.boolean(),
-    split: z.enum(['Full body', 'A/B', 'A/B/C', 'Superior/inferior', 'Padrões de movimento']),
+    split: z.enum(SPLITS),
+    dayFocus: z.partialRecord(z.enum(WEEKDAYS), z.enum(DAY_FOCUS)).optional(),
+    priority: z.string().max(60).optional(),
     cardio: cardioQuestionSchema.optional(),
   })
-  .refine((q) => new Set(q.days).size === q.frequency, {
+  .refine((q) => q.days.length === q.frequency && new Set(q.days).size === q.frequency, {
     message: 'Selecione dias distintos em quantidade igual à frequência.',
     path: ['days'],
   });
@@ -66,6 +86,8 @@ export const studioExerciseSchema = z
     repsMax: z.number().int().min(1).max(100).optional(),
     rest: z.number().int().min(0).max(600),
     kg: z.number().min(0).max(1000).optional(),
+    rir: z.number().int().min(0).max(10).optional(),
+    rpe: z.number().min(0).max(10).optional(),
     notes: z.string().max(500),
     locked: z.boolean(),
   })
