@@ -1,4 +1,7 @@
 /* MOVRA Studio & Fuel share the operational design system. */
+.personal-instruction {padding:16px 18px;margin:14px 0 20px;border-left:3px solid #8db65a;border-radius:0 10px 10px 0;background:var(--secondary);color:var(--foreground);}
+.personal-instruction strong {font-size:12px;}
+.personal-instruction p {white-space:pre-wrap;margin-top:6px;overflow-wrap:anywhere;}
 .cardio-card,
 .cardio-block {
   padding: 20px;

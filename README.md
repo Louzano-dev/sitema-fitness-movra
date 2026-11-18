@@ -1,5 +1,9 @@
 # MOVRA — Treinamento e diário alimentar
 
+Biblioteca ampliada para **319 exercícios e variações**, com busca, filtros e carregamento em lotes. O Personal pode informar observações opcionais por exercício e para o treino inteiro; as instruções aparecem ao aluno durante a execução. [Lista completa do catálogo](projeto/docs/exercicios.md). O catálogo não pretende abranger todos os movimentos existentes, e a ampliação não altera o conjunto de sugestões automáticas do gerador.
+
+Refinamento mais recente: dashboard com composição em áreas, transições geométricas aluno/perfil, treino/editor, exercício/instruções e alimento/editor; valores nutricionais animados e novas etapas visuais do cardio. [Detalhes e validação](projeto/docs/interaction-refinement.md).
+
 A MOVRA é um protótipo frontend para Personal Trainers e alunos/atletas. Reúne gestão de alunos, planejamento e execução de treinos, cardio, evolução física, agenda e um diário alimentar individual. Possui também um ambiente administrativo demonstrativo.
 
 **Para usar, abra o `index.html` da raiz com dois cliques. Não precisa de `npm run dev`, Live Server, instalação ou internet.**

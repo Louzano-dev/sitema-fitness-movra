@@ -344,7 +344,12 @@ export function WorkoutSessionPage({ id }: { id: string }) {
                     </div>
                   </div>
                   <p className="form-help mb-4">{exercise.instructions}</p>
-                  {prescription.notes && <p className="form-help">{prescription.notes}</p>}
+                  {prescription.notes && (
+                    <aside className="personal-instruction">
+                      <strong>Orientação do personal</strong>
+                      <p>{prescription.notes}</p>
+                    </aside>
+                  )}
                   {(() => {
                     const previous = [...data.sessions]
                       .filter((s) => s.studentId === activeStudentId)

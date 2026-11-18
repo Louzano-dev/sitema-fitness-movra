@@ -1,0 +1,27 @@
+{
+  "date": "2026-11-17",
+  "artifact": "index.html",
+  "bytes": 7520527,
+  "sha256": "1df62d4a673006440f2764c9fc86e742f43d7de0bde3a33c5b2e786e0a87e386",
+  "build": "pass",
+  "typecheck": "pass",
+  "lint": "pass",
+  "unitTests": 53,
+  "offlineE2E": {
+    "passed": 43,
+    "minutes": 7.2,
+    "isolatedHtml": true
+  },
+  "finalInteractionE2E": {
+    "passed": 3,
+    "geometryObserved": true
+  },
+  "viewports": [
+    390,
+    768,
+    1280,
+    1920
+  ],
+  "businessRulesChanged": false,
+  "notes": "Chrome headless; sem garantia universal de FPS. Novos testes observam frames e exigem mudança de geometria maior que 8 px."
+}

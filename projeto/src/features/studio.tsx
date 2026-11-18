@@ -118,7 +118,7 @@ export function StudioPage() {
       nextDay.exercises.map((e) => e.id).join() !==
       draft.days[dayIndex].exercises.map((e) => e.id).join()
     )
-      captureOrder();
+      captureOrder(nextDay.exercises.map((e) => e.id));
     edit({
       ...draft,
       days: draft.days.map((day, index) => (index === dayIndex ? nextDay : day)),
@@ -1033,6 +1033,7 @@ export function StudioPage() {
                         id={`studio-note-${row.id}`}
                         value={row.notes}
                         maxLength={500}
+                        placeholder="Opcional: descreva posição, amplitude, ritmo e como deseja que o aluno execute."
                         onChange={(e) => editRow(row.id, { notes: e.target.value })}
                       />
                     </Field>

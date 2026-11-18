@@ -27,6 +27,7 @@ import type { MovraRepository } from '../repository';
 import { createSeed } from './seed';
 import { experienceSchema, type ExperienceState } from '@/domain/experience';
 import { readLocal, writeLocal } from '../local-storage';
+import { EXERCISES } from '@/domain/exercise-catalog';
 
 // Adaptador de demonstração. Estas verificações garantem consistência local, não autorização.
 export class MockRepository implements MovraRepository {
@@ -58,6 +59,11 @@ export class MockRepository implements MovraRepository {
     try {
       const restored = readLocal(storage);
       this.state = restored ?? this.state;
+      const existingIds = new Set(this.state.exercises.map((e) => e.id));
+      this.state = {
+        ...this.state,
+        exercises: [...this.state.exercises, ...EXERCISES.filter((e) => !existingIds.has(e.id))],
+      };
       this.commit({ storageState: 'local' });
     } catch {
       this.state = { ...this.state, storageState: 'invalid' };

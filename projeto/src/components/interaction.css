@@ -1,0 +1,338 @@
+.shared-surface-clone {
+  box-shadow: 0 20px 70px #0002;
+  contain: layout paint;
+  transform-origin: 0 0;
+  border: 1px solid var(--border);
+  display: block !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+.shared-surface-clone * {
+  animation: none !important;
+  transition: none !important;
+  view-transition-name: none !important;
+}
+html[data-shared-surface] [data-slot='dialog-content'] {
+  animation: none !important;
+}
+.personal-command {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.9fr);
+  gap: 24px;
+  align-items: start;
+}
+.personal-command > .welcome-banner {
+  grid-column: 1;
+  min-height: 220px;
+  margin: 0 !important;
+  padding: 28px !important;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+}
+.personal-command > .welcome-banner h2 {
+  font-size: clamp(26px, 2.6vw, 38px);
+  max-width: 330px;
+}
+.personal-command > .welcome-banner > div:first-child {
+  flex: 1;
+}
+.personal-command .day-focus {
+  padding-left: 22px;
+  border-left: 1px solid #66816b;
+  flex: 0 1 190px;
+  color: #c9f078;
+}
+.day-focus > span {
+  font-size: 12px;
+  color: #cbd8c9;
+  display: block;
+  max-width: 150px;
+}
+.day-focus > strong {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.6vw, 52px);
+  font-weight: 400;
+  letter-spacing: -2px;
+  display: block;
+  white-space: nowrap;
+}
+.day-focus > a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 13px;
+}
+.personal-command > .stats-grid {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 0 !important;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--popover);
+}
+.app-shell .personal-command > .stats-grid > .stat {
+  padding: 18px 22px !important;
+  border-radius: 0;
+  min-height: 110px;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+}
+.app-shell .personal-command > .stats-grid > .stat:nth-child(odd) {
+  border-right: 1px solid var(--border);
+}
+.app-shell .personal-command > .stats-grid > .stat:nth-child(-n + 2) {
+  border-bottom: 1px solid var(--border);
+}
+.app-shell .personal-command > .stats-grid > .stat:first-child :is(strong, p, .stat-top) {
+  color: var(--foreground);
+}
+.personal-command .stat strong {
+  font-size: 28px;
+  line-height: 1.2;
+}
+.personal-command .stat p {
+  font-size: 11px;
+  line-height: 1.5;
+}
+.personal-command .stat-top svg {
+  display: none;
+}
+.personal-command > .dashboard-grid,
+.personal-command > .dashboard-bottom {
+  display: contents;
+}
+.personal-command > .dashboard-grid > .panel:first-child {
+  grid-column: 1;
+  grid-row: 2;
+}
+.personal-command > .dashboard-grid > .panel:nth-child(2) {
+  grid-column: 2;
+  grid-row: 2;
+}
+.personal-command > .overview-actions {
+  grid-column: 1/-1;
+  grid-row: 3;
+  margin: 0;
+  padding: 26px 30px;
+}
+.personal-command > .dashboard-bottom > .panel:first-child {
+  grid-column: 1;
+  grid-row: 4;
+}
+.personal-command > .dashboard-bottom > .panel:nth-child(2) {
+  grid-column: 2;
+  grid-row: 4;
+}
+.personal-command > .fuel-overview {
+  grid-column: 1/-1;
+  margin: 0;
+}
+.personal-command .chart-readout {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 26px 0;
+}
+.chart-readout > strong {
+  font: 500 48px var(--font-display);
+  letter-spacing: -2px;
+}
+.chart-readout > span {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.chart-readout .chart-period-tag {
+  margin-left: auto;
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 30px;
+}
+.personal-command .chart {
+  height: 260px;
+}
+.personal-command .agenda-list {
+  padding: 6px 22px;
+}
+.personal-command .agenda-row {
+  padding: 18px 0;
+}
+.personal-command .agenda-time {
+  font: 500 22px var(--font-display);
+}
+.meal-card .nutrition-numbers [aria-hidden],
+.nutrition-numbers strong {
+  font-variant-numeric: tabular-nums;
+}
+.cardio-clock-wrap {
+  background: #172c29;
+  border-radius: 20px;
+  position: relative;
+  padding: 28px 26px 28px 150px;
+  min-height: 170px;
+  margin: 20px 0;
+  color: #c9f078;
+}
+.cardio-clock-wrap > .cardio-clock {
+  margin: 0;
+  padding: 0;
+  background: none;
+  line-height: 1.15;
+}
+.cardio-clock-caption {
+  display: block;
+  font-size: 12px;
+  color: #d0dec9;
+  margin-top: 12px;
+}
+.cardio-orbit {
+  position: absolute;
+  left: 24px;
+  top: 30px;
+  width: 110px;
+  height: 110px;
+}
+.cardio-orbit circle {
+  transition: stroke-dashoffset 200ms linear;
+}
+.cardio-stage-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  list-style: none;
+  padding: 4px 0 12px;
+  margin: 0 0 14px;
+  scrollbar-width: thin;
+}
+.cardio-stage-rail li {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  transition:
+    background 150ms,
+    color 150ms;
+}
+.cardio-stage-rail li > span {
+  font-variant-numeric: tabular-nums;
+}
+.cardio-stage-rail li[aria-current] {
+  background: #172c29;
+  color: #c9f078;
+  border-color: #172c29;
+}
+.cardio-stage-rail li[data-complete='true'] {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+@media (max-width: 1200px) {
+  .personal-command {
+    grid-template-columns: minmax(0, 1.25fr) minmax(270px, 1fr);
+    gap: 16px;
+  }
+  .personal-command > .welcome-banner {
+    display: block;
+  }
+  .personal-command .day-focus {
+    border-left: 0;
+    border-top: 1px solid #66816b;
+    padding: 12px 0 0;
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .day-focus > strong {
+    font-size: 34px;
+  }
+  .personal-command .day-focus > a {
+    font-size: 12px;
+  }
+}
+@media (max-width: 760px) {
+  .personal-command {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .personal-command > .welcome-banner,
+  .personal-command > .stats-grid,
+  .personal-command > .overview-actions,
+  .personal-command > .fuel-overview {
+    width: 100%;
+  }
+  .personal-command > .dashboard-grid,
+  .personal-command > .dashboard-bottom {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 18px;
+  }
+  .personal-command > .dashboard-grid {
+    order: 2;
+  }
+  .personal-command > .overview-actions {
+    order: 3;
+  }
+  .personal-command > .dashboard-bottom {
+    order: 4;
+  }
+  .personal-command > .fuel-overview {
+    order: 5;
+  }
+  .personal-command .chart {
+    height: 220px;
+  }
+  .personal-command > .welcome-banner {
+    padding: 22px !important;
+  }
+  .personal-command .welcome-banner h2 {
+    font-size: 31px;
+  }
+  .day-focus > span {
+    max-width: 110px;
+  }
+  .day-focus > a {
+    max-width: 110px;
+  }
+  .app-shell .personal-command > .stats-grid > .stat {
+    padding: 16px !important;
+  }
+  .personal-command > .overview-actions {
+    padding: 22px;
+  }
+  .cardio-clock-wrap {
+    padding: 24px 18px 24px 110px;
+    min-height: 145px;
+  }
+  .cardio-orbit {
+    left: 12px;
+    top: 28px;
+    width: 85px;
+    height: 85px;
+  }
+  .cardio-clock-wrap .cardio-clock {
+    font-size: 52px;
+  }
+  .cardio-clock-caption {
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cardio-orbit circle,
+  .cardio-stage-rail li {
+    transition: none;
+  }
+}

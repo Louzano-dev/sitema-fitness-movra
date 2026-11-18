@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import gsap from 'gsap';
+import { beginSharedSurface } from './shared-surface';
 export function usePremiumShell(path: string, navigate: (href: string) => void) {
   const sidebar = useRef<HTMLElement>(null),
     pending = useRef<(() => void) | null>(null),
@@ -89,9 +90,7 @@ export function usePremiumShell(path: string, navigate: (href: string) => void) 
       link.target === '_blank' ||
       link.download ||
       link.closest('[role="dialog"]') ||
-      innerWidth < 1000 ||
-      matchMedia('(prefers-reduced-motion: reduce)').matches ||
-      !document.startViewTransition
+      matchMedia('(prefers-reduced-motion: reduce)').matches
     )
       return;
     const url = new URL(link.href, location.href);
@@ -102,7 +101,25 @@ export function usePremiumShell(path: string, navigate: (href: string) => void) 
       return;
     const target = url.hash.startsWith('#/') ? url.hash.slice(1) : url.pathname + url.search;
     if (!target.startsWith('/') || target === path || target.startsWith('/entrar')) return;
+    const linkedSource = link.closest<HTMLElement>('.workout-card,tr,.agenda-row');
+    if (!linkedSource && !document.startViewTransition) return;
     event.preventDefault();
+    if (linkedSource) {
+      const student = target.includes('/alunos/');
+      beginSharedSurface(
+        student
+          ? (linkedSource.querySelector<HTMLElement>('.table-person') ?? linkedSource)
+          : linkedSource,
+        student ? 'main .detail-hero' : 'main .page-heading',
+        true,
+      );
+      navigate(target);
+      return;
+    }
+    if (innerWidth < 1000) {
+      navigate(target);
+      return;
+    }
     const source = link.closest<HTMLElement>('.student-row,.workout-card,tr');
     shared.current = !!source;
     if (source) source.style.viewTransitionName = 'movra-focus';

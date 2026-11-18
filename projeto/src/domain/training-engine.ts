@@ -5,7 +5,7 @@ import {
   type TrainingDay,
   type Program,
 } from './experience';
-import { EXERCISES } from './exercise-catalog';
+import { GENERATOR_EXERCISES } from './exercise-catalog';
 import { CARDIO_CATALOG, makeCardio } from './cardio';
 import { normalize } from './selectors';
 export const RULE_VERSION = 'movra-rules/1.0';
@@ -63,7 +63,7 @@ export function generateProgram(raw: Questionnaire, offset = 0): Proposal {
       'Selecione uma modalidade compatível com os equipamentos. Outras modalidades exigem organização manual.',
     );
   if (reasons.length) return { kind: 'review', reasons };
-  const pool = EXERCISES.filter(
+  const pool = GENERATOR_EXERCISES.filter(
     (e) =>
       e.requires.every((r) => q.equipment.includes(r as (typeof q.equipment)[number])) &&
       !q.excluded.includes(e.id) &&

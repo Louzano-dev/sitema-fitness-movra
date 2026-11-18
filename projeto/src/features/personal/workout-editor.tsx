@@ -108,6 +108,7 @@ export function WorkoutEditor({ id, initialStudent }: { id?: string; initialStud
                       <span>
                         {e.sets} séries × {e.reps} repetições · {e.kg ?? 0} kg · descanso {e.rest}s
                       </span>
+                      {e.notes && <p className="form-help">Observação do personal: {e.notes}</p>}
                     </li>
                   ))}
                 </ol>
@@ -320,6 +321,18 @@ export function WorkoutEditor({ id, initialStudent }: { id?: string; initialStud
                       />
                     </Field>
                   </div>
+                  <Field
+                    label={`Observações do exercício ${index + 1} (opcional)`}
+                    htmlFor={`exercise-notes-${index}`}
+                    error={errors.exercises?.[index]?.notes?.message}
+                  >
+                    <Textarea
+                      id={`exercise-notes-${index}`}
+                      maxLength={500}
+                      {...form.register(`exercises.${index}.notes`)}
+                      placeholder="Explique a execução: posição, amplitude, ritmo ou cuidados específicos."
+                    />
+                  </Field>
                 </div>
               ))}
               {!fields.length && (

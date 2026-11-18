@@ -1,4 +1,5 @@
 import type { Exercise } from './types';
+import { EXPANDED_EXERCISES, exerciseSlug } from './exercise-expansion';
 export interface CatalogExercise extends Exercise {
   secondary: string[];
   pattern: string;
@@ -160,3 +161,17 @@ export const EXERCISES: CatalogExercise[] = entries.map(
           : 'Força',
   }),
 );
+export const GENERATOR_EXERCISES = EXERCISES.slice();
+const knownNames = new Set(EXERCISES.map((e) => exerciseSlug(e.name)));
+for (const exercise of EXPANDED_EXERCISES) {
+  if (knownNames.has(exerciseSlug(exercise.name))) continue;
+  knownNames.add(exerciseSlug(exercise.name));
+  EXERCISES.push({
+    ...exercise,
+    alternatives: EXERCISES.filter(
+      (e) => e.pattern === exercise.pattern && e.group === exercise.group,
+    )
+      .slice(0, 4)
+      .map((e) => e.id),
+  });
+}

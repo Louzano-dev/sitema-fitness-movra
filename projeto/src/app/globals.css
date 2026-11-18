@@ -2,6 +2,7 @@
 @import '../../design/tokens.css';
 @import '../features/experience.css';
 @import '../components/premium.css';
+@import '../components/interaction.css';
 
 @theme inline {
   --color-background: var(--background);

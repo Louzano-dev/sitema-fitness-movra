@@ -723,9 +723,52 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
           ? `Último registro: ${previous.date} · ${clock(previous.seconds)}${previous.distance ? ` · ${previous.distance} km` : ''}`
           : 'Ainda sem registro anterior nesta modalidade.'}
       </p>
-      <div className="cardio-clock" aria-label="Tempo decorrido de cardio">
-        {clock(elapsed)}
+      <div className="cardio-clock-wrap">
+        <svg className="cardio-orbit" viewBox="0 0 120 120" aria-hidden="true">
+          <circle
+            cx="60"
+            cy="60"
+            r="52"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="5"
+            opacity=".15"
+          />
+          <circle
+            cx="60"
+            cy="60"
+            r="52"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="5"
+            pathLength="100"
+            strokeDasharray="100"
+            strokeDashoffset={100 - Math.min(100, (elapsed / cardioSeconds(cardio)) * 100)}
+            transform="rotate(-90 60 60)"
+          />
+        </svg>
+        <div className="cardio-clock" aria-label="Tempo decorrido de cardio">
+          {clock(elapsed)}
+        </div>
+        <span className="cardio-clock-caption">
+          Tempo em movimento · {clock(cardioSeconds(cardio))} planejados
+        </span>
       </div>
+      <ol className="cardio-stage-rail" aria-label="Etapas da sessão">
+        {stages.slice(Math.max(0, stage - 5), Math.max(0, stage - 5) + 12).map((s, offset) => {
+          const index = offset + Math.max(0, stage - 5);
+          return (
+            <li
+              key={`${s.id}-${index}`}
+              aria-current={index === stage ? 'step' : undefined}
+              data-complete={index < stage}
+            >
+              <span>{index < stage ? '✓' : index + 1}</span>
+              {s.type}
+            </li>
+          );
+        })}
+      </ol>
       <p>
         Etapa {stage + 1}/{stages.length}: {current.type} · {current.intensity} ·{' '}
         {clock(Math.max(0, current.seconds - (elapsed - stageStart)))} restantes

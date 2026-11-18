@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { beginSharedSurface } from '@/components/shared-surface';
 import { CardioLibrary } from '../cardio';
 import { Activity, Search } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
@@ -25,6 +26,9 @@ export function ExercisesPage() {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('all');
   const [equipment, setEquipment] = useState('all');
+  const [pageSize, setPageSize] = useState({ key: '', count: 24 });
+  const filterKey = [pattern, category, scope, query, group, equipment].join('|');
+  const limit = pageSize.key === filterKey ? pageSize.count : 24;
   const exercises = EXERCISES.filter(
     (e) =>
       normalize(`${e.name} ${e.tags.join(' ')}`).includes(normalize(query)) &&
@@ -44,7 +48,11 @@ export function ExercisesPage() {
         title="O repertório de cada movimento."
         description="Consulte instruções e equipamentos para compor suas prescrições. Catálogo demonstrativo, sem vídeos ou prescrição automática."
       />
-      <CardioLibrary/>
+      <CardioLibrary />
+      <p className="form-help">
+        {EXERCISES.length} exercícios e variações disponíveis. Busque também pelo músculo, como
+        peitoral, bíceps, glúteos ou panturrilhas.
+      </p>
       <div className="toolbar mb-6 rounded-xl border bg-white">
         <div className="search-field">
           <label className="sr-only" htmlFor="exercise-query">
@@ -107,7 +115,7 @@ export function ExercisesPage() {
       </div>
       {exercises.length ? (
         <div className="exercise-grid">
-          {exercises.map((e) => (
+          {exercises.slice(0, limit).map((e) => (
             <Panel className="exercise-card" key={e.id}>
               <div className="exercise-glyph" aria-hidden>
                 <Activity strokeWidth={1.3} />
@@ -140,15 +148,19 @@ export function ExercisesPage() {
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
-                    onClick={() =>
+                    onClick={(event) => {
+                      beginSharedSurface(
+                        event.currentTarget.closest<HTMLElement>('.exercise-card'),
+                        '[data-slot="dialog-content"]',
+                      );
                       repository.updateExperience((state) => ({
                         ...state,
                         recentExercises: [
                           e.id,
                           ...state.recentExercises.filter((id) => id !== e.id),
                         ].slice(0, 20),
-                      }))
-                    }
+                      }));
+                    }}
                   >
                     Ver instruções
                   </Button>
@@ -198,6 +210,14 @@ export function ExercisesPage() {
             }
           />
         </Panel>
+      )}
+      {exercises.length > limit && (
+        <Button
+          variant="outline"
+          onClick={() => setPageSize({ key: filterKey, count: limit + 24 })}
+        >
+          Mostrar mais exercícios ({Math.min(limit, exercises.length)} de {exercises.length})
+        </Button>
       )}
     </>
   );

@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import { beginSharedSurface } from '@/components/shared-surface';
+import { AnimatedNumber } from '@/components/animated-number';
 import Link from 'next/link';
 import { Apple, Plus, Utensils } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
@@ -72,7 +74,7 @@ function Numbers({ values }: { values: Nutrients }) {
         <span key={key}>
           {label}
           <strong>
-            {display(values[key])} {values[key] === null ? '' : unit}
+            <AnimatedNumber value={values[key]} suffix={` ${unit}`} />
           </strong>
         </span>
       ))}
@@ -134,6 +136,10 @@ export function FuelPage({ personal: personalAccount = false }: { personal?: boo
     }
   };
   function openItem(mealId = '', item?: Meal['items'][number]) {
+    beginSharedSurface(
+      document.activeElement?.closest<HTMLElement>('.food-row,.meal-card') ?? null,
+      '.fuel-food-dialog',
+    );
     setTarget(mealId);
     setSelectedFood(item?.foodId ?? '');
     setSelectingFood(!item);
