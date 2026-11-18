@@ -1,5 +1,7 @@
 # MOVRA — Treinamento e diário alimentar
 
+**[Acessar a demonstração da MOVRA na Vercel](https://sitema-fitness-movra.vercel.app/entrar)**
+
 Ative **Modo guiado** acima do conteúdo para receber orientações por tarefa. O Studio reúne as opções de criar, revisar e atribuir fichas. No diário alimentar, **Registrar e adicionar outro** permite lançar vários alimentos na mesma refeição. [Uso e validação da experiência universal](projeto/docs/experiencia-universal.md).
 
 Biblioteca ampliada para **319 exercícios e variações**, com busca, filtros e carregamento em lotes. O Personal pode informar observações opcionais por exercício e para o treino inteiro; as instruções aparecem ao aluno durante a execução. [Lista completa do catálogo](projeto/docs/exercicios.md). O Studio usa 62 movimentos classificados para gerar propostas por nível, divisão, equipamento e tempo disponível. [Regras, exemplos para os três níveis e referências](projeto/docs/motor-treinos-v2.md).
