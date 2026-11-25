@@ -31,19 +31,14 @@ import {
   PanelLeftOpen,
   Moon,
   Sun,
-  Settings2,
   Users,
   Wallet,
-  MessageCircle,
-  Store,
-  Compass,
   UserRound,
   House,
   WandSparkles,
-  Apple,
 } from 'lucide-react';
 import { connectService } from '@/services/connect-service';
-import { linkAllows, marketplaceService } from '@/services/marketplace-service';
+import { linkAllows, professionalService } from '@/services/professional-service';
 import { Brand } from './brand';
 import { Avatar } from './shared';
 import { useDemo } from './providers';
@@ -62,26 +57,20 @@ const navigation = {
   personal: [
     { href: '/personal', label: 'Visão geral', icon: LayoutDashboard },
     { href: '/personal/alunos', label: 'Alunos', icon: Users },
-    { href: '/personal/conversas', label: 'Conversas', icon: MessageCircle },
-    { href: '/personal/negocio', label: 'Meu negócio', icon: Store },
-    { href: '/personal/evolucao', label: 'Evolução física', icon: ChartNoAxesCombined },
-    { href: '/personal/agenda', label: 'Agenda', icon: CalendarDays },
     { href: '/personal/treinos', label: 'Treinos', icon: ClipboardList },
     { href: '/personal/studio', label: 'MOVRA Studio', icon: WandSparkles },
     { href: '/personal/exercicios', label: 'Exercícios', icon: BookOpen },
-    { href: '/personal/alimentacao', label: 'Alimentação', icon: Apple },
-    { href: '/personal/configuracoes', label: 'Configurações', icon: Settings2 },
+    { href: '/personal/agenda', label: 'Agenda', icon: CalendarDays },
+    { href: '/personal/evolucao', label: 'Evolução física', icon: ChartNoAxesCombined },
+    { href: '/personal/negocio', label: 'Perfil profissional', icon: UserRound },
   ],
   aluno: [
-    { href: '/aluno', label: 'Hoje', icon: House },
+    { href: '/aluno', label: 'Início', icon: House },
     { href: '/aluno/treinos', label: 'Meus treinos', icon: ClipboardList },
-    { href: '/aluno/conversas', label: 'Conversas', icon: MessageCircle },
-    { href: '/aluno/personal', label: 'Meu personal', icon: Users },
-    { href: '/aluno/marketplace', label: 'Encontrar personal', icon: Compass },
     { href: '/aluno/evolucao', label: 'Evolução', icon: Activity },
-    { href: '/aluno/alimentacao', label: 'Alimentação', icon: Apple },
-    { href: '/aluno/agenda', label: 'Agenda', icon: CalendarDays },
+    { href: '/aluno/personal', label: 'Meu personal', icon: Users },
     { href: '/aluno/perfil', label: 'Meu perfil', icon: UserRound },
+    { href: '/aluno/agenda', label: 'Agenda', icon: CalendarDays },
   ],
   admin: [
     { href: '/admin', label: 'Operação', icon: LayoutDashboard },
@@ -155,7 +144,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
     drawerDestination.current = href === path ? null : href;
     setMenuOpen(false);
   }
-  useSyncExternalStore(marketplaceService.subscribe, marketplaceService.revision, () => 0);
+  useSyncExternalStore(professionalService.subscribe, professionalService.revision, () => 0);
   const showAgenda =
     role !== 'aluno' ||
     !session?.account ||
@@ -189,12 +178,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
       <span className="sidebar-active-track" aria-hidden="true" />
       {items.map(({ href, label, icon: Icon }) => {
         const active = path === href || (href !== `/${role}` && path.startsWith(`${href}/`));
-        const section =
-          href === '/personal/treinos'
-            ? 'Planejamento'
-            : href === '/personal/alimentacao'
-              ? 'Meu espaço'
-              : undefined;
+        const section = href === '/personal/treinos' ? 'Planejamento' : undefined;
         return (
           <Fragment key={href}>
             {section && <span className="nav-section">{section}</span>}
@@ -433,7 +417,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
                 [
                   '/aluno',
                   '/aluno/treinos',
-                  '/aluno/alimentacao',
+                  '/aluno/personal',
                   '/aluno/evolucao',
                   '/aluno/perfil',
                 ].includes(i.href),

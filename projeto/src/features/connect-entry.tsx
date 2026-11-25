@@ -6,6 +6,10 @@ import { connectService, type ConnectAccount } from '@/services/connect-service'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field, Feedback } from '@/components/shared';
+import { civilDate, newRoutine, setWeekdays } from '@/domain/habits';
+import { openConnectWorkspace, workspaceStorage } from '@/services/connect-workspace';
+
+const weekdays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
 function invitation() {
   const fragment = location.hash.slice(1);
@@ -35,7 +39,7 @@ export function ConnectEntry({
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const { enterAccount } = useDemoSession();
+  const { enterAccount, session } = useDemoSession();
   const router = useRouter();
   const effectiveRole = token ? 'aluno' : role;
   function open(account: ConnectAccount) {
@@ -81,10 +85,32 @@ export function ConnectEntry({
             onSubmit={async (e) => {
               e.preventDefault();
               if (busy) return;
+              const days = new FormData(e.currentTarget).getAll('weekdays').map(Number);
               setBusy(true);
               setError('');
               try {
-                open(await connectService.createAccount(effectiveRole, name.trim()));
+                const account = await connectService.createAccount(effectiveRole, name.trim());
+                if (account.role === 'aluno' && days.length) {
+                  connectService.activate(account.id);
+                  try {
+                    const routine = newRoutine();
+                    openConnectWorkspace(account, workspaceStorage()).updateExperience((state) => ({
+                      ...state,
+                      habits: {
+                        ...state.habits,
+                        [account.id]: setWeekdays(
+                          routine,
+                          days,
+                          civilDate(new Date(), routine.zone),
+                        ),
+                      },
+                    }));
+                  } catch (reason) {
+                    connectService.activate(session?.account?.id ?? null);
+                    throw reason;
+                  }
+                }
+                open(account);
               } catch (reason) {
                 setError(reason instanceof Error ? reason.message : 'Falha ao cadastrar.');
               } finally {
@@ -102,6 +128,18 @@ export function ConnectEntry({
                 onChange={(e) => setName(e.target.value)}
               />
             </Field>
+            {effectiveRole === 'aluno' && (
+              <fieldset className="grid gap-2">
+                <legend>Dias habituais de treino (opcional)</legend>
+                <div className="flex flex-wrap gap-x-4">
+                  {weekdays.map((day, index) => (
+                    <label key={day} className="checkbox-row min-h-11">
+                      <input type="checkbox" name="weekdays" value={index} /> {day}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            )}
             <Button type="submit" disabled={busy}>
               Criar conta de {effectiveRole === 'personal' ? 'personal' : 'aluno'}
             </Button>

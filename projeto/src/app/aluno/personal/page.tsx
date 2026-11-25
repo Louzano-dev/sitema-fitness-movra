@@ -1,1 +1,1 @@
-export { MyTrainerPage as default } from '@/features/marketplace';
+export { MyTrainerPage as default } from '@/features/professional';

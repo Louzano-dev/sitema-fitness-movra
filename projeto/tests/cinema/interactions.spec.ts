@@ -79,28 +79,6 @@ test('Aluno/perfil e exercício/detalhes têm continuidade geométrica real', as
   await page.getByRole('button', { name: 'Fechar', exact: true }).click();
   await expect(page.locator('.shared-surface-clone')).toHaveCount(0);
 });
-test('Fuel alimento/editor mantém geometria, cálculo e foco', async ({ page }) => {
-  await enter(page, true);
-  await page
-    .locator('.desktop-sidebar')
-    .getByRole('link', { name: 'Alimentação', exact: true })
-    .click();
-  await page.getByRole('button', { name: 'Adicionar alimento', exact: true }).click();
-  await page.getByLabel('Alimento da biblioteca', { exact: true }).selectOption('usda-168878');
-  await page.getByLabel('Quantidade', { exact: true }).fill('150');
-  await page.getByRole('button', { name: 'Registrar alimento', exact: true }).click();
-  await expect(page.locator('.stats-grid')).toContainText('195 kcal');
-  await captureGeometry(page);
-  await page
-    .getByRole('button', { name: 'Editar Arroz branco cozido, grão longo', exact: true })
-    .click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await geometryChanged(page);
-  await page.getByLabel('Quantidade', { exact: true }).fill('200');
-  await page.getByRole('button', { name: 'Atualizar alimento', exact: true }).click();
-  await expect(page.locator('.stats-grid')).toContainText('260 kcal');
-  await expect(page.locator('.shared-surface-clone')).toHaveCount(0);
-});
 test('Dashboard assimétrico, filtros reais e quatro larguras sem overflow', async ({ page }) => {
   test.setTimeout(90000);
   await enter(page);

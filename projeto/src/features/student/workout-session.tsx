@@ -2,6 +2,7 @@
 import { useDemoSession } from '@/components/demo-session';
 import { CardioExecution } from '../cardio';
 import { HabitCelebration } from './habits';
+import { WorkoutShareButton } from './workout-share';
 import { completionReward, type CompletionReward } from '@/domain/habits';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -277,7 +278,8 @@ function WorkoutExecution({ id, activeStudentId }: { id: string; activeStudentId
             {result.source === 'manual' && <p>Conclusão declarada por você, sem séries registradas.</p>}
             {reward && <HabitCelebration key={reward.id} reward={reward} />}
             <div className="form-actions">
-              <Button asChild>
+              <WorkoutShareButton source={{ kind: 'workout', session: result }} primary />
+              <Button asChild variant="outline">
                 <Link href="/aluno/historico">Revisar histórico</Link>
               </Button>
               <Button asChild variant="outline">

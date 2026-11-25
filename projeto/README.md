@@ -1,10 +1,6 @@
-# MOVRA 4.1
-
-Fuel individual: o Personal registra sua própria alimentação em uma identidade separada e não consulta diários, calorias ou nutrientes dos alunos. A opção de compartilhar foi removida; permissões antigas de compartilhamento são ignoradas pelo serviço. Cada aluno continua com seu próprio diário. Os valores representam energia/nutrientes ingeridos, não gasto com exercícios. Esta política substitui os fluxos de compartilhamento descritos nas entregas históricas. Continua sendo demonstração local, sem segurança de produção ou perfil de nutricionista implementado.
+# Fontes da MOVRA
 
 Interface refinada com sidebar compacta/expandida, indicador animado, temas claro/escuro persistentes, transições de navegação e reordenação GSAP Flip. Veja [Premium Motion](docs/premium-motion-release.md) para análise da referência, testes e limites.
-
-No Fuel, o adulto encontra a preferência de estimativas numéricas nas configurações do próprio perfil. O diário de menores ou de pessoas sem idade registrada permite registrar refeições e quantidades sem exibir contagem individualizada.
 
 Novo: [cardio integrado ao Studio](docs/cardio-4.1-release.md), com biblioteca, editor de intervalos, aprovação/atribuição, cronômetro e histórico por aluno. O HTML independente continua sendo a forma direta de uso.
 
@@ -23,15 +19,13 @@ npm.cmd run dev
 
 Acesse http://localhost:3000/entrar somente para manutenção com Next.js. Para gerar o HTML independente: `npm.cmd run build:portable`. Nenhum desses comandos é necessário para usar o `index.html` pronto.
 
-## Studio e Fuel
+## Studio
 
 Consulte a [documentação do motor de treinos 2.0](docs/motor-treinos-v2.md) para reproduzir exemplos, entender as estimativas e revisar a entrega ao aluno.
 
 O Personal acessa **MOVRA Studio**: entrada simplificada com prévia semanal, geração determinística por regras versionadas, editor de dias/exercícios, comparação de regeneração, modelos, revisão e aprovação de versões, atribuição ao aluno correto. Contextos especiais seguem planejamento manual supervisionado; o gerador não é IA nem validação clínica.
 
-O Aluno acessa **Alimentação / MOVRA Fuel**: refeições por data, quantidades, medidas específicas, edição/duplicação, favoritos, alimentos próprios, receitas com peso final informado e resumo exportável. Números nutricionais são opcionais e indisponíveis para menores; compartilhar com o Personal é uma escolha desativada por padrão e revogável. O catálogo inicial contém 17 alimentos USDA identificados, sem atribuição à TBCA.
-
-Fichas, sessões, refeições e preferências são armazenadas localmente por identidade demonstrativa. Sair encerra a visualização; recarregar exige entrar novamente e conserva os dados. Para apagar, use **Meu perfil / Configurações → Redefinir dados demonstrativos**. O navegador precisa permitir armazenamento local; se negar, a interface informa que opera em memória. Copiar o HTML transporta o aplicativo e a mídia, não os registros salvos em outro navegador/caminho.
+Fichas, sessões e preferências são armazenadas localmente por identidade demonstrativa. Sair encerra a visualização; recarregar exige entrar novamente e conserva os dados. Para apagar, use **Meu perfil / Configurações → Redefinir dados demonstrativos**. O navegador precisa permitir armazenamento local; se negar, a interface informa que opera em memória. Copiar o HTML transporta o aplicativo e a mídia, não os registros salvos em outro navegador/caminho.
 
 ## Verificação
 
@@ -48,7 +42,7 @@ Testes de navegador usam Chrome instalado. A suíte Next.js utiliza o build de p
 
 ## Limites
 
-Tudo é demonstrativo, com dados fictícios e armazenamento local sem segurança de produção. A entrada pede somente a seleção de perfil/identidade, com nome fictício opcional. Não há campos de e-mail/senha, cadastro de conta ou recuperação de acesso. Não há autenticação real, backend, Supabase, pagamentos ou IA. O consentimento alimentar limita a visualização do protótipo; não constitui controle de acesso seguro contra inspeção do navegador. Não inserir dados pessoais ou de saúde reais.
+Tudo é demonstrativo, com dados fictícios e armazenamento local sem segurança de produção. A entrada pede somente a seleção de perfil/identidade, com nome fictício opcional. O Connect permite criar e alternar contas locais fictícias. Não há autenticação real, backend, Supabase, pagamentos ou IA. Não inserir dados pessoais ou de saúde reais.
 
 O vídeo está em `public/media/movra-hero.mp4`: versão H.264 silenciosa otimizada, com poster extraído do material original. Redução de movimento, economia de dados e conexões lentas usam o poster. Pausa funciona e a mídia para fora da tela. O original fornecido permanece intocado em Downloads.
 

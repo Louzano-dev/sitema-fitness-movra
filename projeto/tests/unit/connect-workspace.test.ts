@@ -1,11 +1,9 @@
-﻿import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEMO_DATE } from '@/domain/types';
 import { makeCardio } from '@/domain/cardio';
 import { civilDate, consistency, newRoutine, setWeekdays } from '@/domain/habits';
 import { connectService, type ConnectAccount } from '@/services/connect-service';
 import { openConnectWorkspace } from '@/services/connect-workspace';
-import { marketplaceService } from '@/services/marketplace-service';
-import { blankProfile } from '@/domain/marketplace';
 import { approveProgram, saveProgram } from '@/services/experience-service';
 
 async function fixture() {
@@ -16,6 +14,7 @@ async function fixture() {
       data.set(id, raw);
     },
   };
+  vi.stubGlobal('window', { localStorage: storage, navigator: {} });
   const trainer = await connectService.createAccount('personal', 'Personal A');
   const other = await connectService.createAccount('personal', 'Personal B');
   const student = await connectService.createAccount('aluno', 'Aluna');
@@ -30,8 +29,13 @@ async function fixture() {
     await connectService.confirm(student.id, token, account.id);
   }
   await link(trainer);
-  return { open, link, trainer, other, student };
+  return { open, link, trainer, other, student, storage };
 }
+
+afterEach(() => {
+  connectService.activate(null);
+  vi.unstubAllGlobals();
+});
 
 describe('Workspaces do MOVRA Connect', () => {
   it('preserva a rotina e a atividade independente ao encerrar e iniciar acompanhamentos', async () => {
@@ -146,26 +150,7 @@ describe('Workspaces do MOVRA Connect', () => {
   });
 
   it('mantém a atribuição e o cancelamento recentes quando outra aba registra ou edita feedback', async () => {
-    const { open, trainer, student } = await fixture();
-    connectService.activate(trainer.id);
-    await marketplaceService.saveProfile(trainer.id, {
-      ...blankProfile(trainer.name),
-      specialties: 'Força',
-      published: true,
-    });
-    await marketplaceService.saveOffer(trainer.id, {
-      name: 'Sessões online',
-      description: 'Sessões individuais',
-      modality: 'Online',
-      price: 10000,
-      mode: 'Com agendamento',
-      chat: true,
-      updates: 'Mensal',
-      cancellation: 'A pedido.',
-    });
-    const offer = marketplaceService.business(trainer.id).offers[0];
-    connectService.activate(student.id);
-    await marketplaceService.activateOffer(student.id, offer.id, true);
+    const { open, trainer, student, storage } = await fixture();
     const coach = open(trainer);
     const exerciseId = coach.getSnapshot().exercises[0].id;
     const appointment = {
@@ -175,6 +160,7 @@ describe('Workspaces do MOVRA Connect', () => {
       duration: 30,
       kind: 'Online' as const,
     };
+    expect(coach.getSnapshot().appointments).toEqual([]);
     await coach.saveAppointment(appointment);
     const workout = await coach.saveWorkout({
       studentId: student.id,
@@ -227,8 +213,10 @@ describe('Workspaces do MOVRA Connect', () => {
         .sessions.map((s) => s.note),
     ).toEqual(['Comentário atualizado']);
     connectService.activate(student.id);
-    const contract = marketplaceService.contracts(student.id)[0];
-    await marketplaceService.cancel(student.id, contract.id);
+    const linkId = connectService.professionalLinks(student.id)[0].id;
+    storage.setItem('movra:marketplace:1', JSON.stringify({
+      contracts: [{ linkId, endedAt: Date.now(), offer: { mode: 'Com agendamento' } }],
+    }));
     expect(connectService.activeTrainer(student.id)?.id).toBe(trainer.id);
     const retained = open(student);
     expect(retained.getSnapshot().sessions.map((s) => s.id)).toContain(session);

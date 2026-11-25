@@ -1,1 +1,1 @@
-export { BusinessPage as default } from '@/features/marketplace';
+export { BusinessPage as default } from '@/features/professional';

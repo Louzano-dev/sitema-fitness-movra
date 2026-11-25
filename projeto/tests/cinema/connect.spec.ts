@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -39,6 +40,7 @@ test('Connect local cadastra contas, lê QR, confirma o vínculo e preserva isol
         await details.locator('summary').click();
       if (create) {
         await page.getByLabel('Nome da nova conta local').fill(name);
+        if (role === 'aluno') await page.getByRole('checkbox', { name: 'Segunda' }).check();
         await page.getByRole('button', { name: 'Criar conta de ' + role, exact: true }).click();
       } else
         await page.getByRole('button', { name: 'Abrir conta de ' + name, exact: true }).click();
@@ -64,7 +66,7 @@ test('Connect local cadastra contas, lê QR, confirma o vínculo e preserva isol
     expect(png).toMatch(/^data:image\/png/);
     await login('aluno', 'Aluno Julio', true, local);
     const field = page.getByLabel('Código ou link do personal');
-    const find = page.getByRole('button', { name: 'Encontrar meu personal' });
+    const find = page.getByRole('button', { name: 'Consultar convite' });
     const confirm = page.getByRole('button', { name: 'Conectar com este personal' });
     const upload = page.getByLabel('Imagem do QR Code');
     const alert = page.locator('.student-connect [role="alert"]');
@@ -83,6 +85,8 @@ test('Connect local cadastra contas, lê QR, confirma o vínculo e preserva isol
         await page
           .locator('.student-connect')
           .screenshot({ path: testInfo.outputPath('connect-' + width + '.png') });
+      if (width === 360)
+        expect((await new AxeBuilder({ page }).include('.student-connect').analyze()).violations).toEqual([]);
     }
     await field.fill(local);
     await find.click();
@@ -131,18 +135,27 @@ test('Connect local cadastra contas, lê QR, confirma o vínculo e preserva isol
       mimeType: 'image/png',
       buffer: Buffer.from(png!.split(',')[1], 'base64'),
     });
-    await expect(page.getByText('Sem verificação pública')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Personal Aurora' })).toBeVisible();
     await confirm.click();
     await expect(page.getByRole('button', { name: 'Desvincular personal' })).toBeVisible();
+    await expect(field).toBeHidden();
+    expect((await new AxeBuilder({ page }).include('.student-connect').analyze()).violations).toEqual([]);
+    expect(await page.evaluate(() => {
+      const accounts = JSON.parse(localStorage.getItem('movra:connect:1')!).accounts;
+      const account = accounts.find(({ name }: { name: string }) => name === 'Aluno Julio');
+      return JSON.parse(localStorage.getItem('movra:connect:workspace:' + account.id)!)
+        .state.experience.habits[account.id].plans[0].weekdays;
+    })).toEqual([0]);
+    if (process.env.MOVRA_CONNECT_SCREENSHOTS)
+      await page.locator('.student-connect').screenshot({ path: testInfo.outputPath('connect-vinculado.png') });
     await login('personal', 'Personal Aurora', false);
     await page
       .locator('.desktop-sidebar')
       .getByRole('link', { name: 'Alunos', exact: true })
       .click();
     await expect(page.getByRole('link', { name: 'Abrir perfil de Aluno Julio' })).toBeVisible();
-    await page.locator('.desktop-sidebar').getByRole('link', { name: 'Meu negócio' }).click();
+    await page.locator('.desktop-sidebar').getByRole('link', { name: 'Perfil profissional' }).click();
     await page.getByLabel('Especialidades', { exact: true }).fill('Treinamento funcional');
-    await page.getByLabel('Exibir meu perfil em Encontrar personal').check();
     await page.getByRole('button', { name: 'Salvar currículo' }).click();
     await expect(page.getByText('Currículo salvo neste navegador.')).toBeVisible();
     await login('personal', 'Personal Íris', true);
@@ -210,7 +223,6 @@ test('Connect local cadastra contas, lê QR, confirma o vínculo e preserva isol
     await page.getByLabel('Código ou link do personal').fill(publicCode);
     await find.click();
     await expect(page.getByText('Treinamento funcional', { exact: true })).toBeVisible();
-    await expect(page.getByText('Cadastrado', { exact: true })).toBeVisible();
     await confirm.click();
     await expect(page.getByText(/Aguardando aprovação de Personal Aurora/)).toBeVisible();
     await login('personal', 'Personal Aurora', false);

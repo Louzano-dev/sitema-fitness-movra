@@ -108,10 +108,10 @@ test('agenda detecta conflito e cancela encontro', async ({ page }) => {
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Aluno', { exact: true }).selectOption('ana');
   await dialog.getByLabel('Horário', { exact: true }).fill('09:30');
-  await dialog.getByRole('button', { name: 'Agendar na prévia' }).click();
+  await dialog.getByRole('button', { name: 'Salvar agendamento' }).click();
   await expect(dialog.getByRole('alert')).toContainText('conflita');
   await dialog.getByLabel('Horário', { exact: true }).fill('16:00');
-  await dialog.getByRole('button', { name: 'Agendar na prévia' }).click();
+  await dialog.getByRole('button', { name: 'Salvar agendamento' }).click();
   const row = page.locator('.agenda-entry').filter({ hasText: '16:00' });
   await row.getByRole('button', { name: 'Cancelar sessão' }).click();
   await page.getByRole('button', { name: 'Confirmar cancelamento' }).click();

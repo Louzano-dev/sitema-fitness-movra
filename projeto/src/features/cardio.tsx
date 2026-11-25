@@ -29,6 +29,7 @@ import type { Questionnaire } from '@/domain/experience';
 import type { Workout } from '@/domain/types';
 import { civilDate, completionReward, type CompletionReward } from '@/domain/habits';
 import { HabitCelebration } from './student/habits';
+import { WorkoutShareButton } from './student/workout-share';
 import { saveCardioRecord } from '@/services/cardio-service';
 import { errorMessage } from '@/domain/schemas';
 const uid = () => crypto.randomUUID();
@@ -672,12 +673,15 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
     [error, setError] = useState(''),
     [success, setSuccess] = useState('');
   const start = useRef(0),
-    accumulated = useRef(0),
-    recordId = useRef(uid());
+    accumulated = useRef(0);
+  const [recordId] = useState(uid);
   const stages = useMemo(() => cardioStages(cardio), [cardio]),
     current = stages[stage];
   const previous = (data.experience.cardioRecords ?? []).find(
     (r) => r.studentId === studentId && r.prescription.modality.id === cardio.modality.id,
+  );
+  const savedRecord = (data.experience.cardioRecords ?? []).find(
+    (record) => record.id === recordId && record.studentId === studentId,
   );
   useEffect(() => {
     if (!running) return;
@@ -826,7 +830,7 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
             saveCardioRecord(
               repository,
               {
-                id: recordId.current,
+                id: recordId,
                 studentId,
                 workoutId: workout.id,
                 versionId: workout.versionId ?? '',
@@ -840,7 +844,7 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
               studentId,
             );
             if (!workout.exercises.length)
-              setReward(completionReward(before, repository.getSnapshot(), studentId, recordId.current));
+              setReward(completionReward(before, repository.getSnapshot(), studentId, recordId));
             pause();
             setSuccess(
               'Cardio registrado. Consulte o histórico ou corrija os campos e salve novamente.',
@@ -903,6 +907,7 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
         <Button type="submit">Salvar registro de cardio</Button>
       </form>
       {reward && <HabitCelebration key={reward.id} reward={reward} />}
+      {savedRecord && <WorkoutShareButton source={{ kind: 'cardio', record: savedRecord }} />}
     </Panel>
   );
 }
@@ -1030,6 +1035,7 @@ export function CardioHistory({
             {r.rpe ?? 'não informado'}
           </p>
           <p>{r.notes}</p>
+          {!personal && <WorkoutShareButton source={{ kind: 'cardio', record: r }} compact />}
           {!personal && (
             <form
               className="form-stack"

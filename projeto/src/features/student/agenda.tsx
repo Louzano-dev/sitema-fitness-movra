@@ -13,9 +13,9 @@ export function StudentAgenda() {
   return (
     <>
       <PageHeader
-        eyebrow="Meus encontros"
-        title="Um tempo para acompanhar."
-        description="Agenda fictícia organizada pelo personal. Sem confirmação ou notificação externa."
+        eyebrow="Acompanhamento"
+        title="Meus encontros"
+        description="Horários combinados com o personal e salvos neste navegador."
       />
       <Panel>
         {appointments.length ? (
@@ -42,7 +42,10 @@ export function StudentAgenda() {
             </div>
           ))
         ) : (
-          <EmptyState title="Nenhum encontro por aqui." />
+          <EmptyState
+            title="Nenhum encontro agendado."
+            description="Você pode seguir seus treinos normalmente."
+          />
         )}
       </Panel>
     </>

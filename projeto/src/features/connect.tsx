@@ -1,12 +1,12 @@
 'use client';
 
 import { useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import Link from 'next/link';
-import { ArrowRight, ArrowUpRight, Clock3, Hash, Info, Link2, Shield } from 'lucide-react';
+import { ArrowRight, Clock3, Hash, Info } from 'lucide-react';
+import { Brand } from '@/components/brand';
 import { Avatar, Panel } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { marketplaceService } from '@/services/marketplace-service';
+import { professionalService } from '@/services/professional-service';
 import { ConnectEntry } from './connect-entry';
 import { InviteScanner } from './connect-qr';
 import './connect.css';
@@ -17,22 +17,39 @@ import {
   type ConnectAccount,
 } from '@/services/connect-service';
 
-const demoNotice = 'Demonstração local. As contas e os convites funcionam neste navegador.';
-const hostedEntry = 'https://sitema-fitness-movra.vercel.app/entrar';
+export const connectDemoNotice =
+  'Demonstração local. Convites e vínculos funcionam neste navegador.';
 
 function inviteUrls(token: string) {
   const location = window.location;
   const fragment = '#/entrar?convite=' + token;
   if (location.protocol === 'file:') {
-    return { open: fragment, share: hostedEntry + '#convite=' + token };
+    return fragment;
   }
-  const local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-  const secureOrigin = location.protocol === 'https:' || local;
   const portable = location.hash.startsWith('#/') || /\.html?$/i.test(location.pathname);
-  const open = portable
+  return portable
     ? location.origin + location.pathname + fragment
     : location.origin + '/entrar#convite=' + token;
-  return { open, share: secureOrigin ? open : hostedEntry + '#convite=' + token };
+}
+
+export function ConnectHeading({
+  title,
+  id,
+  description,
+}: {
+  title: string;
+  id: string;
+  description?: string;
+}) {
+  return (
+    <header className="connect-heading">
+      <p className="connect-brand">
+        <Brand compact /> MOVRA Connect
+      </p>
+      <h1 id={id}>{title}</h1>
+      {description && <p>{description}</p>}
+    </header>
+  );
 }
 
 function useConnectAction() {
@@ -85,7 +102,7 @@ export function TrainerConnect({
   renderQr?: (url: string) => ReactNode;
 }) {
   const active = useActiveAccount(account);
-  const { busy, run, message } = useConnectAction();
+  const { busy, run, message, failed } = useConnectAction();
   const [selected, select] = useState('');
   const [removing, setRemoving] = useState('');
   const [qr, setQr] = useState(false);
@@ -95,11 +112,11 @@ export function TrainerConnect({
   const requests = connectService.pendingStudents(account.id);
   const students = connectService.linkedStudents(account.id);
   const current = invites.find((invite) => invite.token === selected);
-  const links =
+  const inviteUrl =
     current && inviteStatus(current) === 'Disponível' ? inviteUrls(current.token) : null;
 
   return (
-    <Panel title="Convidar alunos" description={demoNotice}>
+    <Panel title="Convidar alunos" description={connectDemoNotice}>
       <div className="grid gap-4">
         <div className="grid gap-1">
           <label htmlFor={prefix + '-code'}>Código público do personal</label>
@@ -135,19 +152,15 @@ export function TrainerConnect({
             Criar convite individual
           </Button>
         </div>
-        {current && links && (
+        {current && inviteUrl && (
           <div className="grid gap-2 border-l-2 border-current pl-3">
             <label htmlFor={prefix + '-link'}>Link do convite individual</label>
-            <Input id={prefix + '-link'} value={links.share} readOnly />
+            <Input id={prefix + '-link'} value={inviteUrl} readOnly />
             <small>
               Uso único · vence em {new Date(current.expiresAt).toLocaleString('pt-BR')}
             </small>
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                disabled={busy}
-                onClick={() => run(() => copy(links.share))}
-              >
+              <Button variant="outline" disabled={busy} onClick={() => run(() => copy(inviteUrl))}>
                 Copiar link
               </Button>
               {renderQr && (
@@ -155,21 +168,9 @@ export function TrainerConnect({
                   {qr ? 'Ocultar QR Code' : 'Mostrar QR Code'}
                 </Button>
               )}
-              <Button variant="outline" asChild>
-                <a
-                  href={
-                    'https://wa.me/?text=' +
-                    encodeURIComponent('Convite MOVRA Connect (demonstração local): ' + links.share)
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Compartilhar pelo WhatsApp
-                </a>
-              </Button>
             </div>
-            {qr && renderQr?.(links.share)}
-            <a className="underline" href={links.open} target="_blank" rel="noopener noreferrer">
+            {qr && renderQr?.(inviteUrl)}
+            <a className="underline" href={inviteUrl} target="_blank" rel="noopener noreferrer">
               Abrir convite neste navegador
             </a>
           </div>
@@ -287,9 +288,7 @@ export function TrainerConnect({
             </ul>
           </details>
         )}
-        <p role="status" aria-live="polite">
-          {message}
-        </p>
+        {message && <p role={failed ? 'alert' : 'status'}>{message}</p>}
       </div>
     </Panel>
   );
@@ -298,18 +297,21 @@ export function TrainerConnect({
 export function StudentConnect({
   account,
   initialCredential = '',
+  embedded = false,
+  onInvitationUsed,
 }: {
   account?: ConnectAccount;
   initialCredential?: string;
+  embedded?: boolean;
+  onInvitationUsed?: () => void;
 }) {
   useSyncExternalStore(connectService.subscribe, connectService.revision, () => 0);
-  useSyncExternalStore(marketplaceService.subscribe, marketplaceService.revision, () => 0);
   const { busy, run, message, failed, clear } = useConnectAction();
-  const [action, setAction] = useState<'find' | 'confirm' | 'cancel'>('find');
+  const [action, setAction] = useState<'find' | 'confirm'>('find');
   const [credential, setCredential] = useState(() => inviteCredential(initialCredential));
   const [needsAccount, setNeedsAccount] = useState(false);
   const [candidate, setCandidate] = useState<Awaited<
-    ReturnType<typeof connectService.preview>
+    ReturnType<typeof professionalService.previewInvitation>
   > | null>(null);
   const [mode, setMode] = useState<'add' | 'replace'>('add');
   const [scannerKey, resetScanner] = useState(0);
@@ -317,8 +319,7 @@ export function StudentConnect({
   if (account && !connectService.isActive(account.id)) return null;
   const trainers = account ? connectService.activeTrainers(account.id) : [];
   const pending = account ? connectService.pendingTrainer(account.id) : null;
-  const profile =
-    candidate && marketplaceService.directory().find((p) => p.id === candidate.trainer.id);
+  const profile = candidate?.profile;
   const alreadyLinked = trainers.some((trainer) => trainer.id === candidate?.trainer.id);
   const alreadyRequested =
     !!pending && candidate?.method === 'public' && pending.id === candidate.trainer.id;
@@ -339,7 +340,7 @@ export function StudentConnect({
       return;
     }
     void run(async () => {
-      setCandidate(await connectService.preview(account.id, value));
+      setCandidate(await professionalService.previewInvitation(account.id, value));
       return '';
     });
   }
@@ -363,14 +364,17 @@ export function StudentConnect({
   }
 
   return (
-    <section className="student-connect" aria-labelledby={prefix + '-title'}>
-      <header className="connect-heading">
-        <p>
-          <Link2 size={17} aria-hidden /> MOVRA Connect
-        </p>
-        <h1 id={prefix + '-title'}>Conecte-se ao seu personal</h1>
-        <p>Digite o código enviado pelo seu treinador ou use um QR Code.</p>
-      </header>
+    <section
+      className={embedded ? 'connect-embedded' : 'student-connect'}
+      aria-labelledby={embedded ? undefined : prefix + '-title'}
+    >
+      {!embedded && (
+        <ConnectHeading
+          id={prefix + '-title'}
+          title="Conecte-se ao seu personal"
+          description="Use o código, o link ou o QR Code que seu personal compartilhou com você."
+        />
+      )}
       <div className="connect-body">
         <form
           onSubmit={(event) => {
@@ -405,7 +409,7 @@ export function StudentConnect({
               />
             </div>
             <Button className="connect-primary" type="submit" disabled={busy}>
-              {busy && action === 'find' ? 'Buscando personal…' : 'Encontrar meu personal'}
+              {busy && action === 'find' ? 'Consultando convite…' : 'Consultar convite'}
               <ArrowRight size={17} aria-hidden />
             </Button>
           </div>
@@ -437,10 +441,6 @@ export function StudentConnect({
               <div>
                 <h2>{profile?.name || candidate.trainer.name}</h2>
                 {profile?.specialties && <p>{profile.specialties}</p>}
-                <small>
-                  <Shield size={14} aria-hidden />
-                  {profile?.verification ?? 'Sem verificação pública'}
-                </small>
               </div>
             </div>
             {alreadyLinked ? (
@@ -480,6 +480,7 @@ export function StudentConnect({
                       );
                       setCandidate(null);
                       setCredential('');
+                      onInvitationUsed?.();
                       return result === 'public'
                         ? 'Solicitação enviada ao personal.'
                         : 'Vínculo confirmado.';
@@ -493,37 +494,55 @@ export function StudentConnect({
           </div>
         )}
         {feedback('confirm')}
-        {pending && account && (
-          <div className="connect-pending">
-            <p>
-              <Clock3 size={17} aria-hidden /> Aguardando aprovação de {pending.name}.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              onClick={() => {
-                setAction('cancel');
-                void run(async () => {
-                  await connectService.cancelRequest(account.id);
-                  return 'Solicitação cancelada.';
-                });
-              }}
-            >
-              Cancelar solicitação
-            </Button>
-          </div>
-        )}
-        {feedback('cancel')}
+        {!embedded && account && <PendingRequest account={account} />}
       </div>
-      <footer className="connect-footer">
-        <p>
-          <Info size={15} aria-hidden /> Demonstração local. Os vínculos funcionam neste navegador.
-        </p>
-        <Link href="/aluno/marketplace">
-          Explorar profissionais <ArrowUpRight size={15} aria-hidden />
-        </Link>
-      </footer>
+      {!embedded && <ConnectFooter />}
     </section>
+  );
+}
+
+export function PendingRequest({ account }: { account: ConnectAccount }) {
+  const { busy, run, message, failed } = useConnectAction();
+  const active = useActiveAccount(account);
+  if (!active) return null;
+  const pending = connectService.pendingTrainer(account.id);
+  return (
+    <>
+      {pending && (
+        <div className="connect-pending">
+          <p>
+            <Clock3 size={17} aria-hidden /> Aguardando aprovação de {pending.name}.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() =>
+              run(async () => {
+                await connectService.cancelRequest(account.id);
+                return 'Solicitação cancelada.';
+              })
+            }
+          >
+            Cancelar solicitação
+          </Button>
+        </div>
+      )}
+      {message && (
+        <p className="connect-note" data-error={failed} role={failed ? 'alert' : 'status'}>
+          {message}
+        </p>
+      )}
+    </>
+  );
+}
+
+export function ConnectFooter() {
+  return (
+    <footer className="connect-footer">
+      <p>
+        <Info size={15} aria-hidden /> {connectDemoNotice}
+      </p>
+    </footer>
   );
 }

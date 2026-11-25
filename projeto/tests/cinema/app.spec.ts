@@ -391,12 +391,12 @@ for (const width of [390, 1280]) {
     await page.getByRole('button', { name: 'Agendar encontro' }).click();
     await page.getByLabel('Aluno', { exact: true }).selectOption('ana');
     await page.getByLabel('Horário', { exact: true }).fill('09:30');
-    await page.getByRole('button', { name: 'Agendar na prévia' }).click();
+    await page.getByRole('button', { name: 'Salvar agendamento' }).click();
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('conflita');
     await page.getByLabel('Horário', { exact: true }).fill('18:00');
-    await page.getByRole('button', { name: 'Agendar na prévia' }).click();
+    await page.getByRole('button', { name: 'Salvar agendamento' }).click();
     await expect(page.locator('main').getByRole('status').first()).toContainText(
-      'Encontro adicionado',
+      'Encontro agendado',
     );
     await page
       .locator('.agenda-entry')

@@ -4,7 +4,7 @@ import { connectService, type ConnectAccount } from './connect-service';
 import { readLocal, writeLocal } from './local-storage';
 import { MockRepository } from './mock/repository';
 import { createSeed } from './mock/seed';
-import { marketplaceService, linkAllows } from './marketplace-service';
+import { professionalService, linkAllows } from './professional-service';
 import { emptyLibrary, libraryKey } from '@/domain/student-library';
 
 type WorkspaceStorage = Pick<Storage, 'getItem' | 'setItem'>;
@@ -69,6 +69,12 @@ function stored(storage: WorkspaceStorage, account: ConnectAccount): DemoState {
     },
     experience: { ...emptyExperience(), ages: {} },
   };
+}
+
+export function currentWorkspaceAppointments(account: ConnectAccount) {
+  if (account.role !== 'personal' || !connectService.isActive(account.id))
+    throw new Error('Entre no perfil autorizado para continuar.');
+  return stored(workspaceStorage(), account).appointments;
 }
 
 function combine<T extends { id: string }>(incoming: T[], existing: T[]) {
@@ -304,7 +310,7 @@ export function openConnectWorkspace(account: ConnectAccount, storage: Workspace
     state,
     personal
       ? (input, id) =>
-          marketplaceService.checkBooking(
+          professionalService.checkBooking(
             account.id,
             input,
             stored(storage, account).appointments,

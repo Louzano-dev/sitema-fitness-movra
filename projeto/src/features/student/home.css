@@ -17,31 +17,30 @@
   position: relative;
   overflow: hidden;
   border-radius: 20px;
-  background: #102620;
+  background: #172c29;
   color: #f3f3e9;
-}
-.athlete-session-photo {
-  position: absolute;
-  inset: 0 0 0 20%;
-  z-index: -2;
-  background-size: cover;
-  background-position: 55% 24%;
 }
 .athlete-session::before {
   position: absolute;
-  inset: 0;
+  inset: -42% -32% auto auto;
+  width: 95%;
+  aspect-ratio: 1;
+  transform: rotate(-22deg);
+  border-radius: 48% 52% 32% 68%;
+  border: 1px solid #a3c08a36;
+  box-shadow:
+    0 0 0 2rem #bbeb970c,
+    0 0 0 4rem #bbeb9709;
   content: '';
   z-index: -1;
-  background:
-    linear-gradient(90deg, #102620 0%, #102620f2 24%, #102620a8 56%, #10262018 100%),
-    linear-gradient(0deg, #0b211bea, transparent 77%);
+  pointer-events: none;
 }
 .athlete-session-content {
   display: flex;
   align-items: flex-start;
   flex-direction: column;
   padding: clamp(20px, 2.8vw, 42px);
-  min-height: clamp(280px, 23vw, 360px);
+  min-height: clamp(240px, 21vw, 320px);
 }
 .athlete-session .eyebrow {
   color: #d7e9cb;
@@ -92,7 +91,7 @@
 }
 .athlete-shortcuts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
   padding: 6px;
   margin-top: 10px;
@@ -117,6 +116,9 @@
   width: 17px;
   height: 17px;
   flex-shrink: 0;
+}
+.athlete-shortcuts a:only-child {
+  grid-column: 1/-1;
 }
 .athlete-shortcuts a:hover {
   background: var(--muted);
@@ -150,9 +152,6 @@
   }
   .athlete-shortcuts a {
     font-size: 0.77rem;
-  }
-  .athlete-session-photo {
-    inset-inline-start: 25%;
   }
   .athlete-session h2 {
     font-size: clamp(1.6rem, 7vw, 2rem);

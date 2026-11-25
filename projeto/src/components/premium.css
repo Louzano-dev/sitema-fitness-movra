@@ -192,7 +192,7 @@
 .environment-personal .stats-grid > .stat:first-child strong {
   color: #c9f078;
 }
-.app-shell :is(.panel, .module-panel, .workout-card, .meal-card) {
+.app-shell :is(.panel, .module-panel, .workout-card) {
   border-radius: 16px;
 }
 .app-shell :is(.workout-card, .studio-exercise, .exercise-card) {
@@ -213,17 +213,10 @@
     border-color 120ms,
     box-shadow 120ms;
 }
-.app-shell .meal-card[open],
 .app-shell details[open] {
   border-color: #96ad80;
 }
-.app-shell .nutrition-numbers strong {
-  font-variant-numeric: tabular-nums;
-}
 .stat-value {
-  animation: metric-feedback 180ms ease-out;
-}
-.app-shell :is(.meal-card, .food-row) {
   animation: metric-feedback 180ms ease-out;
 }
 @keyframes metric-feedback {
@@ -298,7 +291,6 @@
   :is(
     .panel,
     .module-panel,
-    .meal-card,
     .studio-exercise,
     .cardio-card,
     .cardio-block,
@@ -321,16 +313,7 @@
 }
 :root[data-movra-theme='dark']
   .app-shell
-  :is(
-    h1,
-    h2,
-    h3,
-    .stat strong,
-    .nutrition-numbers strong,
-    .cardio-metrics strong,
-    .history-row h3,
-    .page-heading h1
-  ) {
+  :is(h1, h2, h3, .stat strong, .cardio-metrics strong, .history-row h3, .page-heading h1) {
   color: #edf1e5;
 }
 :root[data-movra-theme='dark']
@@ -354,14 +337,14 @@
 }
 :root[data-movra-theme='dark']
   .app-shell
-  :is(input, textarea, select, .native-select, .selected-food) {
+  :is(input, textarea, select, .native-select) {
   background: #14251f;
   color: #edf1e5;
   border-color: #637c6a;
 }
 :root[data-movra-theme='dark']
   .app-shell
-  :is(.data-table th, .data-table td, .history-row, .agenda-row, .food-row) {
+  :is(.data-table th, .data-table td, .history-row, .agenda-row) {
   border-color: #3c5147;
   background: transparent;
   color: #edf1e5;

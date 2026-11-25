@@ -34,13 +34,16 @@ test('treino e companheiro funcionam no painel do aluno em quatro larguras', asy
         .poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth))
         .toBeLessThanOrEqual(1);
       await expect(
-        page.locator('.athlete-shortcuts').getByRole('link', { name: 'Conversas' }),
+        page.locator('.athlete-shortcuts').getByRole('link', { name: 'Meu personal' }),
       ).toBeVisible();
       await page.screenshot({ path: info.outputPath('aluno-' + width + '.png') });
     }
     await start.click();
     await expect(page.getByRole('button', { name: 'Concluir treino', exact: true })).toBeVisible();
-    await page.locator('.desktop-sidebar').getByRole('link', { name: 'Hoje', exact: true }).click();
+    await page
+      .locator('.desktop-sidebar')
+      .getByRole('link', { name: 'Início', exact: true })
+      .click();
     await page.getByRole('button', { name: 'Ativar tema escuro' }).click();
     await page.getByText('Evolução e conquistas', { exact: true }).click();
     const habits = await new AxeBuilder({ page })

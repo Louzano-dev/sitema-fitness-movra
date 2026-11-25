@@ -29,9 +29,7 @@ import type { Environment } from '@/domain/types';
 import Link, { useLocation } from './router';
 import { LoginPage } from '@/features/login';
 import { StudioPage } from '@/features/studio';
-import { FuelPage } from '@/features/fuel';
-import { ConversationsPage } from '@/features/conversations';
-import { MarketplacePage, BusinessPage, MyTrainerPage, PublicProfilePage } from '@/features/marketplace';
+import { BusinessPage, MyTrainerPage } from '@/features/professional';
 import { StudentAgenda } from '@/features/student/agenda';
 
 class PortableErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -56,14 +54,10 @@ class PortableErrorBoundary extends Component<{ children: ReactNode }, { failed:
 
 function RouteView({ path, query }: { path: string; query: URLSearchParams }) {
   if (path === '/entrar' || path === '/') return <LoginPage />;
-  if (path === '/aluno/conversas' || path === '/personal/conversas') return <ConversationsPage/>;
-  if (path === '/aluno/marketplace') return <MarketplacePage/>;
-  if (path === '/aluno/personal') return <MyTrainerPage/>;
-  if (path === '/personal/negocio') return <BusinessPage/>;
+  if (path === '/aluno/personal') return <MyTrainerPage />;
+  if (path === '/personal/negocio') return <BusinessPage />;
   if (path === '/personal') return <PersonalDashboard />;
   if (path === '/personal/studio') return <StudioPage reviewQueue={query.get('revisao') === '1'} />;
-  if (path === '/personal/alimentacao') return <FuelPage personal />;
-  if (path === '/aluno/alimentacao') return <FuelPage />;
   if (path === '/aluno/agenda') return <StudentAgenda />;
   if (path === '/personal/alunos') return <StudentsPage />;
   if (path === '/personal/treinos') return <WorkoutsPage />;
@@ -95,7 +89,16 @@ function RouteView({ path, query }: { path: string; query: URLSearchParams }) {
       title="Este caminho não foi encontrado."
       description="Retorne ao início do seu acompanhamento."
       action={
-        <Link className="button-link" href="/personal">
+        <Link
+          className="button-link"
+          href={
+            path.startsWith('/aluno')
+              ? '/aluno'
+              : path.startsWith('/admin')
+                ? '/admin'
+                : '/personal'
+          }
+        >
           Ir para o início
         </Link>
       }
@@ -127,8 +130,6 @@ function PortableApp() {
     <PortableErrorBoundary key={location}>
       {path === '/entrar' || path === '/' ? (
         <LoginPage />
-      ) : /^\/profissional\/[^/]+$/.test(path) ? (
-        <PublicProfilePage id={path.slice('/profissional/'.length)}/>
       ) : (
         <AppShell role={role}>
           <RouteView key={location} path={path} query={new URLSearchParams(search)} />

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { FREE_ACTIVE_STUDENT_LIMIT } from '@/domain/marketplace';
 
 const accountSchema = z.object({
   id: z.string(),
@@ -99,12 +98,6 @@ function addLink(
   );
   if (current.some((link) => link.trainerId === trainerId))
     throw new Error('Você já está conectado a este personal.');
-  if (
-    state.links.filter((l) => l.trainerId === trainerId && l.endedAt === null).length >=
-    FREE_ACTIVE_STUDENT_LIMIT
-  ) {
-    throw new Error('Este personal atingiu a capacidade do plano gratuito.');
-  }
   if (mode === 'replace') for (const link of current) link.endedAt = now;
   state.links.push({
     id: randomHex(16),
@@ -137,7 +130,6 @@ export interface ConnectService {
     input: string,
     expectedTrainerId: string,
     mode?: LinkMode,
-    origin?: Origin,
   ): Promise<Candidate['method']>;
   pendingTrainer(studentId: string): ConnectAccount | null;
   pendingStudents(trainerId: string): ConnectAccount[];
@@ -346,7 +338,6 @@ export class LocalConnectService implements ConnectService {
     input: string,
     expectedTrainerId: string,
     mode: LinkMode = 'replace',
-    origin: Origin = 'direct',
   ) {
     return this.lookup(studentId, input, (state, candidate, invite) => {
       if (candidate.trainer.id !== expectedTrainerId)
@@ -360,11 +351,11 @@ export class LocalConnectService implements ConnectService {
         throw new Error('Você já está conectado a este personal.');
       }
       if (invite) {
-        addLink(state, studentId, expectedTrainerId, this.clock(), mode, origin);
+        addLink(state, studentId, expectedTrainerId, this.clock(), mode, 'direct');
         invite.usedAt = this.clock();
       } else {
         state.requests = state.requests.filter((request) => request.studentId !== studentId);
-        state.requests.push({ studentId, trainerId: expectedTrainerId, mode, origin });
+        state.requests.push({ studentId, trainerId: expectedTrainerId, mode, origin: 'direct' });
       }
       return candidate.method;
     });

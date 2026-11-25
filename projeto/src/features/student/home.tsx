@@ -1,5 +1,4 @@
 'use client';
-import { LOGIN_POSTER } from '../login-media';
 import './home.css';
 import { useDemoSession } from '@/components/demo-session';
 import {
@@ -7,7 +6,6 @@ import {
   CalendarDays,
   ClipboardList,
   Clock3,
-  MessageCircle,
   Dumbbell,
   Layers,
   UserRound,
@@ -22,7 +20,6 @@ import { Button } from '@/components/ui/button';
 import { DEMO_DATE } from '@/domain/types';
 import { formatDate, studentSessions } from '@/domain/selectors';
 import { WorkoutCards } from '@/features/personal/workouts';
-import { FuelOverview } from '@/features/fuel';
 import { HabitsPanel } from './habits';
 import { civilDate } from '@/domain/habits';
 export function StudentHome() {
@@ -54,11 +51,6 @@ export function StudentHome() {
       <div className="athlete-today">
         <div className="athlete-priority">
           <section className="athlete-session" aria-labelledby="active-session-name">
-            <div
-              className="athlete-session-photo"
-              aria-hidden="true"
-              style={{ backgroundImage: 'url("' + LOGIN_POSTER + '")' }}
-            />
             <div className="athlete-session-content">
               <p className="eyebrow">
                 {workout?.weekday && workout.weekday !== weekday
@@ -81,8 +73,8 @@ export function StudentHome() {
                 </div>
               ) : (
                 <p>
-                  Encontre um personal para receber sua ficha ou registre um treino por conta
-                  própria em Minha rotina.
+                  Use um convite do seu personal para receber sua ficha ou registre um treino em
+                  Minha rotina.
                 </p>
               )}
               {workout ? (
@@ -96,8 +88,8 @@ export function StudentHome() {
                 </Button>
               ) : (
                 <Button asChild className="athlete-start">
-                  <Link href="/aluno/marketplace">
-                    Encontrar personal <ArrowRight size={17} />
+                  <Link href="/aluno/personal">
+                    Vincular meu personal <ArrowRight size={17} />
                   </Link>
                 </Button>
               )}
@@ -107,12 +99,11 @@ export function StudentHome() {
             <Link href="/aluno/treinos">
               <ClipboardList aria-hidden /> Meus treinos
             </Link>
-            <Link href="/aluno/conversas">
-              <MessageCircle aria-hidden /> Conversas
-            </Link>
-            <Link href="/aluno/personal">
-              <UserRound aria-hidden /> Meu personal
-            </Link>
+            {workout && (
+              <Link href="/aluno/personal">
+                <UserRound aria-hidden /> Meu personal
+              </Link>
+            )}
           </nav>
         </div>
         <HabitsPanel />
@@ -151,30 +142,31 @@ export function StudentHome() {
             <TextLink href="/aluno/historico">Ver histórico</TextLink>
           </div>
         </Panel>
-        <Panel title="Próximo encontro">
-          <div className="panel-body">
-            {today[0] ? (
-              <>
-                <CalendarDays size={26} className="muted mb-4" aria-hidden />
-                <h3>{formatDate(today[0].date, { day: 'numeric', month: 'long' })}</h3>
-                <p className="muted mt-2">
-                  {today[0].time} · {today[0].duration} min · {today[0].kind}
-                </p>
-                <p className="form-help mt-5">
-                  Com{' '}
-                  {today[0].trainerId
-                    ? (connectService.getAccount(today[0].trainerId)?.name ?? 'seu personal')
-                    : data.profiles.personal.name}
-                  . Agendamento demonstrativo feito no espaço do personal.
-                </p>
-              </>
-            ) : (
-              <EmptyState title="Nenhum encontro agendado." />
-            )}
-          </div>
-        </Panel>
+        {(today[0] || !session?.account) && (
+          <Panel title="Próximo encontro">
+            <div className="panel-body">
+              {today[0] ? (
+                <>
+                  <CalendarDays size={26} className="muted mb-4" aria-hidden />
+                  <h3>{formatDate(today[0].date, { day: 'numeric', month: 'long' })}</h3>
+                  <p className="muted mt-2">
+                    {today[0].time} · {today[0].duration} min · {today[0].kind}
+                  </p>
+                  <p className="form-help mt-5">
+                    Com{' '}
+                    {today[0].trainerId
+                      ? (connectService.getAccount(today[0].trainerId)?.name ?? 'seu personal')
+                      : data.profiles.personal.name}
+                    . Agendamento demonstrativo feito no espaço do personal.
+                  </p>
+                </>
+              ) : (
+                <EmptyState title="Nenhum encontro agendado." />
+              )}
+            </div>
+          </Panel>
+        )}
       </div>
-      <FuelOverview />
       <div className="section-gap">
         <div className="page-heading">
           <h2 className="flex items-center gap-2">

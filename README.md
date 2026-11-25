@@ -1,15 +1,16 @@
-# MOVRA — Treinamento e diário alimentar
+# MOVRA — Planejamento, treino e evolução
 
 **[Acessar a demonstração da MOVRA na Vercel](https://sitema-fitness-movra.vercel.app/entrar)**
 
-## MOVRA 7.0 na versão local
+## MVP
 
-No painel **Hoje**, o aluno inicia ou retoma a ficha e acompanha a meta da semana. Em **Evolução e conquistas**, o companheiro MOVRA passa por Início, Ritmo, Firme, Força e Elite após 0, 1, 3, 6 e 12 semanas encerradas com a meta cumprida. Abrir o aplicativo apenas acende o indicador. Os dias de descanso preservam a sequência. Em **Meu personal**, a consulta por código, link ou QR permite conferir o profissional antes de confirmar o vínculo.
+O personal cadastra alunos, monta e atribui fichas no Studio e pode usar a agenda. O aluno inicia ou retoma o treino no painel **Início** e organiza suas fichas em **Em uso**, **Salvos**, **Arquivados** e **Histórico**. O fim de um vínculo preserva as fichas recebidas e os registros de execução.
 
-- Em **Meus treinos**, escolha o programa principal, salve, arquive ou restaure uma ficha e consulte o histórico. A cópia personalizada atribuída pelo Connect permanece disponível após encerrar o vínculo. O modelo do profissional continua no espaço dele.
-- Em **Meu personal**, gerencie os acompanhamentos. O Connect permite manter mais de um treinador. **Encontrar personal** reúne os perfis publicados neste navegador. Em **Meu negócio**, o personal apresenta seu currículo e define os serviços oferecidos.
-- O aluno pode escolher dias de treino e acompanhar sua constância na visão geral. Os dias planejados são independentes das reservas de horário. Cada conversa pertence a um vínculo. As mídias são locais e os vídeos têm validade de sete dias. Com a aplicação fechada, a limpeza física aguarda uma nova abertura.
-- Para experimentar a troca entre personal e aluno, abra as duas contas locais na mesma cópia do aplicativo e no mesmo navegador. A seleção de serviços é demonstrativa. Verificação documental, pagamentos, sincronização entre dispositivos e descarte de mídias em servidor dependem de infraestrutura externa.
+Em **Minha rotina**, o aluno escolhe seus dias e acompanha a meta semanal. Em **Evolução e conquistas**, o companheiro MOVRA passa por Início, Ritmo, Firme, Força e Elite após 0, 1, 3, 6 e 12 semanas com a meta cumprida. Abrir o aplicativo apenas acende o indicador. Os dias de descanso preservam a sequência.
+
+O MOVRA Share usa as métricas da sessão para exportar uma figurinha transparente, uma arte Stories de 1080 × 1920 ou uma composição sobre foto escolhida pelo aluno. A foto é processada no navegador. O compartilhamento por arquivo usa o menu nativo quando disponível, com download de PNG como alternativa.
+
+Conversas, Fuel e marketplace saíram do MVP. Os registros anteriores ficam no armazenamento local para eventual recuperação com uma versão compatível.
 
 ## Studio e Connect
 
@@ -19,13 +20,13 @@ Em **MOVRA Connect**, selecione Personal ou Aluno na entrada e abra **Criar ou a
 
 Contas, convites e fichas desta demonstração ficam no armazenamento do navegador. Para experimentar os dois lados, selecione as contas na mesma origem e no mesmo navegador. O endereço publicado e cada cópia local do HTML podem ter armazenamentos diferentes. Autenticação, controle de acesso no servidor e sincronização entre aparelhos dependem de um backend futuro.
 
-Ative **Modo guiado** acima do conteúdo para receber orientações por tarefa. O Studio reúne as opções de criar, revisar e atribuir fichas. No diário alimentar, **Registrar e adicionar outro** permite lançar vários alimentos na mesma refeição. [Uso e validação da experiência universal](projeto/docs/experiencia-universal.md).
+Ative **Modo guiado** acima do conteúdo para receber orientações por tarefa. O Studio reúne as opções de criar, revisar e atribuir fichas. [Uso e validação da experiência universal](projeto/docs/experiencia-universal.md).
 
 Biblioteca ampliada para **319 exercícios e variações**, com busca, filtros e carregamento em lotes. O Personal pode informar observações opcionais por exercício e para o treino inteiro; as instruções aparecem ao aluno durante a execução. [Lista completa do catálogo](projeto/docs/exercicios.md). O Studio usa 96 movimentos com função, equipamento e dificuldade classificados para gerar propostas por nível, divisão, equipamento e tempo disponível. [Histórico do motor 2.0 e referências](projeto/docs/motor-treinos-v2.md).
 
-O dashboard e os editores usam transições entre aluno e perfil, treino e editor, exercício e instruções, alimento e quantidade. [Detalhes das interações](projeto/docs/interaction-refinement.md).
+O dashboard e os editores usam transições entre aluno e perfil, treino e editor, exercício e instruções. [Detalhes das interações](projeto/docs/interaction-refinement.md).
 
-A MOVRA é um protótipo frontend para Personal Trainers e alunos/atletas. Reúne gestão de alunos, planejamento e execução de treinos, cardio, evolução física, agenda e um diário alimentar individual. Possui também um ambiente administrativo demonstrativo.
+A MOVRA é um protótipo frontend para Personal Trainers e alunos/atletas. Reúne gestão de alunos, planejamento e execução de treinos, cardio, evolução física, agenda e compartilhamento de treinos. Possui também um ambiente administrativo demonstrativo.
 
 **Para usar, abra o `index.html` da raiz com dois cliques. Não precisa de `npm run dev`, Live Server, instalação ou internet.**
 
@@ -52,7 +53,6 @@ Os alertas de cobertura do Full Body usam frequência semanal e individualizaç�
 - **Biblioteca:** exercícios com busca, filtros, instruções, equipamentos, favoritos e alternativas. Mídia técnica não cadastrada é identificada.
 - **Cardio:** modalidades aeróbicas, cadastro de modalidades próprias, editor de blocos/ciclos, intensidade e parâmetros aplicáveis. Pode acompanhar a musculação ou compor um dia independente.
 - **Agenda e evolução:** agendamentos, conflito/cancelamento demonstrativos, avaliações e acompanhamento dos registros.
-- **Minha alimentação:** diário próprio do Personal, separado dos alunos.
 
 O Studio organiza propostas que precisam de avaliação profissional. Contextos especiais, menores e configurações incoerentes seguem revisão/planejamento supervisionado. Não há diagnóstico ou garantia de adequação individual.
 
@@ -63,24 +63,6 @@ O aluno recebe fichas atribuídas ao seu ID, consulta instruções e último reg
 No cardio, visualiza modalidade, parâmetros, etapa atual/próxima e histórico. Pode iniciar, pausar, retomar, avançar etapas, registrar duração real, distância aplicável, esforço percebido e observações. Registros podem ser corrigidos no histórico. Não depende de relógio ou equipamento conectado.
 
 O cronômetro de cardio usa tempo monotônico; animações não calculam sua duração. **Recarregar ou abandonar a página reinicia o relógio em andamento. Os registros já salvos permanecem.**
-
-## MOVRA Fuel — alimentação individual
-
-Cada aluno possui seu próprio diário. O Personal também registra sua própria alimentação, mas **não consulta refeições, calorias ou nutrientes dos alunos**. Não existe opção de compartilhar alimentação com o Personal; permissões antigas de compartilhamento são ignoradas pelo serviço.
-
-O Fuel permite:
-
-- Registrar refeições e alimentos por data, editar quantidades, excluir, duplicar e reutilizar registros.
-- Pesquisar alimentos, usar favoritos, cadastrar produtos próprios e criar receitas com rendimento final informado.
-- Adultos podem consultar estimativas de energia e macronutrientes. A exibição começa ativa e respeita a preferência do próprio perfil. Para menores ou pessoas sem idade registrada, o diário apresenta refeições e quantidades sem contagem individualizada.
-- Usar gramas e porções específicas documentadas para cada alimento.
-- Consultar histórico e exportar resumo demonstrativo em JSON.
-
-**São estimativas de energia e nutrientes ingeridos nos alimentos, não calorias gastas em exercícios.** Não há compensação entre comida e treino, dieta prescrita, metas calóricas automáticas ou recomendação de suplementos.
-
-O catálogo inicial possui 17 alimentos identificados do USDA FoodData Central SR Legacy, com origem consultável. Não são dados atribuídos à TBCA. Alimentos próprios são identificados como informados pelo usuário. Nutrientes desconhecidos geram estimativa parcial, sem serem tratados como zero confirmado; mililitros não são convertidos genericamente em gramas.
-
-A separação dos diários funciona na interface e nos serviços do protótipo. Não equivale a autorização segura: quem inspeciona o navegador pode acessar os dados locais. Um backend futuro deverá implementar identidade, autorização e isolamento reais. Não há perfil de nutricionista implementado.
 
 ## Administração
 
@@ -142,15 +124,12 @@ npm.cmd run test:e2e
 
 Os testes portáteis copiam o HTML sozinho para uma pasta temporária e o abrem no Chrome com rede desligada. Os testes Next.js utilizam um servidor local de teste do build de produção. Isso não cria dependência de servidor para o HTML.
 
-Na última alteração de privacidade do Fuel passaram **53 testes unitários, seis cenários Fuel/Studio offline, build, tipagem e lint**, além da confirmação final do fluxo de diários individuais. A revisão de motion executou 40 cenários; as quatro falhas iniciais foram corrigidas e retestadas em execuções específicas. Não se afirma uma rodada única de 40 testes aprovada após essas correções.
-
-- [Diários individuais e privacidade atual](projeto/docs/fuel-private-release.md)
 - [Design e motion: análise da referência e resultados](projeto/docs/premium-motion-release.md)
 - [Cardio: implementação, testes e limites](projeto/docs/cardio-4.1-release.md)
 - [Studio e Fuel: fundação MOVRA 3.0](projeto/docs/movra-3-release.md)
 - [Uso e geração do HTML portátil](projeto/docs/portable.md)
 
-Documentos antigos registram políticas anteriores. Para alimentação, prevalece o fluxo individual descrito neste README e na entrega de privacidade.
+Os documentos anteriores registram o histórico de cada versão.
 
 ## O que ainda falta para produção
 

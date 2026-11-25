@@ -73,7 +73,7 @@ function CompanionPose({
       {/* Raw local WebP also works when the standalone exporter embeds its data URL. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={companionImage(name + (celebrating ? '-vitoria' : '') + '.webp')}
+        src={companionImage(name + (celebrating && name === 'elite' ? '-vitoria' : '') + '.webp')}
         width={284}
         height={320}
         alt=""

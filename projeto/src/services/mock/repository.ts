@@ -142,7 +142,9 @@ export class MockRepository implements MovraRepository {
     return workouts.map((w) => w.id);
   }
   reset = () => {
-    this.commit(createSeed());
+    const { foods, meals, preferences, favorites } = this.state.experience;
+    const seed = createSeed();
+    this.commit({ ...seed, experience: { ...seed.experience, foods, meals, preferences, favorites } });
   };
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);

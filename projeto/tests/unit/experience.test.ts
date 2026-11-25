@@ -1,25 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { generateProgram, RULE_VERSION } from '@/domain/training-engine';
 import { EXERCISES } from '@/domain/exercise-catalog';
-import { FOODS } from '@/domain/foods';
-import {
-  gramsFor,
-  foodNutrients,
-  totalNutrients,
-  type Questionnaire,
-  type Food,
-  type Meal,
-} from '@/domain/experience';
+import { type Questionnaire } from '@/domain/experience';
 import { MockRepository } from '@/services/mock/repository';
-import {
-  approveProgram,
-  saveProgram,
-  saveFood,
-  saveMeal,
-  sharedMeals,
-  PERSONAL_FUEL_ID,
-  recipeFood,
-} from '@/services/experience-service';
+import { approveProgram, saveProgram } from '@/services/experience-service';
 import { STORAGE_KEY } from '@/services/local-storage';
 const q: Questionnaire = {
   studentId: 'ana',
@@ -43,26 +27,6 @@ function proposal(input = q) {
   const result = generateProgram(input);
   if (result.kind !== 'proposal') throw new Error(result.reasons.join(' '));
   return result.program;
-}
-const rice = FOODS.find((food) => food.id === 'usda-168878')!;
-const emptyFood: Food = {
-  id: '',
-  name: 'Alimento do rótulo',
-  brand: 'Marca fictícia',
-  category: 'Outros',
-  source: '',
-  sourceId: '',
-  per100g: { kcal: 100, protein: 10, carbs: 5, fat: 2 },
-  portions: [{ label: 'Porção', grams: 30 }],
-};
-function memoryStorage() {
-  const values = new Map<string, string>();
-  return {
-    getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => {
-      values.set(key, value);
-    },
-  };
 }
 describe('Studio · regras e versões', () => {
   it('gera adulto iniciante de forma determinística e sem inferir carga', () => {
@@ -127,7 +91,7 @@ describe('Studio · regras e versões', () => {
     const changed = generateProgram(q, 1);
     expect(changed.kind).toBe('proposal');
     expect(current.days[0].exercises[0].sets).toBe(5);
-    const again = generateProgram(q,1);
+    const again = generateProgram(q, 1);
     if (changed.kind !== 'proposal' || again.kind !== 'proposal') throw Error('Proposta esperada');
     expect(again.program.days).toEqual(changed.program.days);
   });
@@ -170,24 +134,31 @@ describe('Studio · regras e versões', () => {
     const draft = saveProgram(repository, { ...program, supervised });
     expect(() => approveProgram(repository, draft.id, true)).toThrow(/exclusões.*duração/);
     expect(repository.getSnapshot().experience.versions).toHaveLength(0);
-    expect(repository.getSnapshot().experience.programs.find((p) => p.id === draft.id)?.status).toBe('Rascunho');
+    expect(
+      repository.getSnapshot().experience.programs.find((p) => p.id === draft.id)?.status,
+    ).toBe('Rascunho');
   });
   it('valida exercícios próprios e itens ausentes também em fichas manuais', () => {
     const repository = new MockRepository();
     const program = proposal();
     const ownId = repository.saveOwnExercise({
-      ...EXERCISES[0], name: 'Agachamento adaptado', equipment: 'Máquinas',
+      ...EXERCISES[0],
+      name: 'Agachamento adaptado',
+      equipment: 'Máquinas',
     });
     const day = program.days[0];
     const row = { ...day.exercises[0], exerciseId: ownId };
     const draft = saveProgram(repository, {
-      ...program, days: [{ ...day, exercises: [row] }], supervised: true,
+      ...program,
+      days: [{ ...day, exercises: [row] }],
+      supervised: true,
     });
     expect(() => approveProgram(repository, draft.id, true)).toThrow(/equipamentos/);
     const manual = saveProgram(repository, { ...draft, questionnaire: undefined });
     expect(approveProgram(repository, manual.id, true).status).toBe('Aprovado');
     const unknown = saveProgram(repository, {
-      ...manual, days: [{ ...day, exercises: [{ ...row, exerciseId: 'own-ausente' }] }],
+      ...manual,
+      days: [{ ...day, exercises: [{ ...row, exerciseId: 'own-ausente' }] }],
     });
     expect(() => approveProgram(repository, unknown.id, true)).toThrow(/ausente na biblioteca/);
   });
@@ -221,116 +192,16 @@ describe('Studio · regras e versões', () => {
     expect(repository.getSnapshot().sessions.find((s) => s.id === sessionId)).toEqual(session);
   });
 });
-describe('Fuel · quantidades, origem e privacidade', () => {
-  it('Personal tem diário próprio e não recebe dados de alunos por consentimento antigo', () => {
-    const repository = new MockRepository();
-    saveMeal(
-      repository,
-      {
-        id: '',
-        studentId: PERSONAL_FUEL_ID,
-        date: '2026-11-12',
-        name: 'Lanche',
-        note: '',
-        favorite: false,
-        items: [{ id: 'item', foodId: rice.id, quantity: 100, unit: 'g', grams: 100 }],
-      },
-      PERSONAL_FUEL_ID,
-    );
-    expect(sharedMeals(repository.getSnapshot(), 'personal', PERSONAL_FUEL_ID)).toHaveLength(1);
-    expect(sharedMeals(repository.getSnapshot(), 'aluno', 'ana')).toEqual([]);
-    expect(sharedMeals(repository.getSnapshot(), 'aluno', PERSONAL_FUEL_ID)).toEqual([]);
-    expect(sharedMeals(repository.getSnapshot(), 'admin', PERSONAL_FUEL_ID)).toEqual([]);
-  });
-  it('usa arroz USDA verificado: 150 g equivalem a 195 kcal', () => {
-    expect(rice.per100g.kcal).toBe(130);
-    expect(foodNutrients(rice, 150).kcal).toBe(195);
-    expect(rice.sourceId).toContain('168878');
-  });
-  it('converte porção específica, sem tratar ml como g', () => {
-    expect(gramsFor(emptyFood, 2, 'Porção')).toBe(60);
-    expect(() => gramsFor(emptyFood, 200, 'ml')).toThrow('conversão');
-    expect(() => gramsFor(emptyFood, -1, 'g')).toThrow();
-  });
-  it('mantém nutrientes desconhecidos como estimativa parcial', () => {
-    const result = totalNutrients([
-      { kcal: 100, protein: 10, carbs: null, fat: 1 },
-      { kcal: 50, protein: 5, carbs: 20, fat: 2 },
-    ]);
-    expect(result.values).toEqual({ kcal: 150, protein: 15, carbs: null, fat: 3 });
-    expect(result.partial).toBe(true);
-  });
-  it('normaliza rótulo por porção sem inventar informação ausente', () => {
-    const repository = new MockRepository();
-    const food = saveFood(
-      repository,
-      { ...emptyFood, per100g: { ...emptyFood.per100g, carbs: null } },
-      'ana',
-      50,
-    );
-    expect(food.per100g.kcal).toBe(200);
-    expect(food.per100g.carbs).toBeNull();
-    expect(food.ownerId).toBe('ana');
-    expect(food.source).toContain('usuário');
-  });
-  it('valida números e referência de alimento personalizado', () => {
-    const repository = new MockRepository();
-    expect(() => saveFood(repository, emptyFood, 'ana', 0)).toThrow();
-    expect(() =>
-      saveFood(repository, { ...emptyFood, per100g: { ...emptyFood.per100g, kcal: -10 } }, 'ana'),
-    ).toThrow();
-  });
-  it('calcula receita com rendimento final distinto do peso cru', () => {
-    const recipe = recipeFood([rice], [{ foodId: rice.id, grams: 100 }], 200, 'Receita teste');
-    expect(recipe.per100g.kcal).toBe(65);
-    expect(() => recipeFood([rice], [], 200, 'Vazia')).toThrow();
-  });
-  it('isola alimentos próprios e refeições por identidade', () => {
-    const repository = new MockRepository();
-    const food = saveFood(repository, emptyFood, 'ana');
-    const meal: Meal = {
-      id: '',
-      studentId: 'bruno',
-      date: '2026-11-12',
-      name: 'Almoço',
-      note: '',
-      favorite: false,
-      items: [{ id: 'item', foodId: food.id, quantity: 100, unit: 'g', grams: 100 }],
-    };
-    expect(() => saveMeal(repository, meal, 'ana')).toThrow('Identidade');
-    expect(() => saveMeal(repository, meal, 'bruno')).toThrow('disponível');
-  });
-  it('compartilha somente com consentimento e revoga imediatamente', () => {
-    const repository = new MockRepository();
-    saveMeal(
-      repository,
-      {
-        id: '',
-        studentId: 'ana',
-        date: '2026-11-12',
-        name: 'Almoço',
-        note: '',
-        favorite: false,
-        items: [{ id: 'item', foodId: rice.id, quantity: 150, unit: 'g', grams: 999 }],
-      },
-      'ana',
-    );
-    expect(repository.getSnapshot().experience.meals[0].items[0].grams).toBe(150);
-    expect(sharedMeals(repository.getSnapshot(), 'personal', 'ana')).toEqual([]);
-    repository.updateExperience((state) => ({
-      ...state,
-      preferences: { ana: { showNumbers: true, share: true } },
-    }));
-    expect(sharedMeals(repository.getSnapshot(), 'personal', 'ana')).toEqual([]);
-    expect(sharedMeals(repository.getSnapshot(), 'personal', 'bruno')).toEqual([]);
-    expect(sharedMeals(repository.getSnapshot(), 'admin', 'ana')).toEqual([]);
-    repository.updateExperience((state) => ({
-      ...state,
-      preferences: { ana: { showNumbers: true, share: false } },
-    }));
-    expect(sharedMeals(repository.getSnapshot(), 'personal', 'ana')).toEqual([]);
-  });
-});
+function memoryStorage() {
+  const values = new Map<string, string>();
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      values.set(key, value);
+    },
+  };
+}
+
 describe('Persistência local versionada', () => {
   it('restaura uma ficha parcialmente preenchida com as séries já concluídas e o tempo ativo', () => {
     const storage = memoryStorage();
@@ -349,31 +220,22 @@ describe('Persistência local versionada', () => {
     next.reset();
     expect(next.getSnapshot().workoutCheckpoints).toEqual({});
   });
-  it('restaura fichas, refeições e histórico em uma nova instância', async () => {
+  it('restaura fichas e preserva dados de versões anteriores em uma nova instância', async () => {
     const storage = memoryStorage();
     const repository = new MockRepository();
     repository.attachStorage(storage);
     const draft = saveProgram(repository, proposal());
     approveProgram(repository, draft.id, true);
     await repository.assignProgram(draft.id);
-    saveMeal(
-      repository,
-      {
-        id: '',
-        studentId: 'ana',
-        date: '2026-11-12',
-        name: 'Jantar',
-        note: '',
-        favorite: false,
-        items: [{ id: 'item', foodId: rice.id, quantity: 100, unit: 'g', grams: 100 }],
-      },
-      'ana',
-    );
+    const legacy = [{ id: 'meal-1', name: 'Jantar', studentId: 'ana' }];
+    repository.updateExperience((state) => ({ ...state, meals: legacy }));
     const restored = new MockRepository();
     restored.attachStorage(storage);
     expect(restored.getSnapshot().experience.programs[0].status).toBe('Atribuído');
-    expect(restored.getSnapshot().experience.meals[0].name).toBe('Jantar');
     expect(restored.getSnapshot().workouts).toEqual(repository.getSnapshot().workouts);
+    expect(restored.getSnapshot().experience.meals).toEqual(legacy);
+    restored.reset();
+    expect(restored.getSnapshot().experience.meals).toEqual(legacy);
   });
   it('tolera corrupção e armazena reset explícito', () => {
     const storage = memoryStorage();
@@ -385,7 +247,7 @@ describe('Persistência local versionada', () => {
     const restored = new MockRepository();
     restored.attachStorage(storage);
     expect(restored.getSnapshot().storageState).toBe('local');
-    expect(restored.getSnapshot().experience.meals).toEqual([]);
+    expect(restored.getSnapshot().experience.meals).toBeUndefined();
   });
   it('continua utilizável quando o navegador nega gravação', () => {
     const repository = new MockRepository();

@@ -14,7 +14,7 @@ import {
   type LibraryAction,
 } from '@/domain/student-library';
 
-const tabs = ['Em uso', 'Salvos', 'Histórico'] as const;
+const tabs = ['Em uso', 'Salvos', 'Arquivados', 'Histórico'] as const;
 const pageSize = 6;
 export function StudentWorkouts() {
   const { studentId } = useDemoSession();
@@ -38,7 +38,7 @@ export function StudentWorkouts() {
     (g) =>
       (tab === 'Em uso'
         ? g.status !== 'archived'
-        : g.status === 'archived' || g.status === 'saved') &&
+        : g.status === (tab === 'Arquivados' ? 'archived' : 'saved')) &&
       (!trainer || g.trainer === trainer) &&
       (!goal || g.goal === goal),
   );
@@ -61,7 +61,7 @@ export function StudentWorkouts() {
       {
         main: 'Treino principal atualizado.',
         save: 'Ficha salva.',
-        archive: 'Ficha arquivada em Salvos.',
+        archive: 'Ficha arquivada. Você pode restaurá-la em Arquivados.',
         restore: 'Ficha restaurada em Em uso.',
         remove: 'Ficha removida da biblioteca. Seu histórico foi preservado.',
       }[action],
@@ -168,7 +168,7 @@ export function StudentWorkouts() {
                   remaining.length ? 'Nenhuma ficha nesta seleção.' : 'Sua biblioteca está pronta.'
                 }
                 description={
-                  tab === 'Salvos'
+                  tab === 'Salvos' || tab === 'Arquivados'
                     ? 'Use as opções da ficha para salvar ou arquivar um programa.'
                     : 'As fichas atribuídas ao seu perfil aparecem aqui.'
                 }

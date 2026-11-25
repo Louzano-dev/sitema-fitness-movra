@@ -106,14 +106,12 @@
   line-height: 1.5;
   margin-top: 0.7rem;
 }
-.studio-tools,
-.food-filters {
+.studio-tools {
   padding: 0.25rem 0.75rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid var(--border);
 }
 .studio-tools summary,
-.food-filters summary,
 .studio-advanced summary {
   padding: 0.65rem 0;
   min-height: 44px;
@@ -131,23 +129,6 @@
 .studio-tools .module-nav {
   margin-block: 0.5rem;
 }
-.food-shortcuts,
-.student-shortcuts {
-  display: flex;
-  gap: 0.5rem 1rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.food-shortcuts strong {
-  width: 100%;
-  font-size: 0.875rem;
-}
-.student-shortcuts {
-  margin-block: 0.5rem 1.25rem;
-}
-.student-shortcuts a {
-  min-height: 44px;
-}
 .editor-steps {
   display: flex;
   flex-wrap: wrap;
@@ -164,12 +145,7 @@
 .app-shell .set-row {
   grid-template-columns: 3rem minmax(0, 1fr) minmax(0, 1fr) minmax(4.5rem, auto);
 }
-.fuel-preference {
-  margin-block: 1rem;
-}
-.app-shell .form-stack :is(input:not([type='checkbox']), select, textarea),
-.fuel-food-dialog :is(input:not([type='checkbox']), select),
-.app-shell .session-exercise .form-help {
+.app-shell .form-stack :is(input:not([type='checkbox']), select, textarea), .app-shell .session-exercise .form-help {
   font-size: 1rem;
 }
 .app-shell :is(.studio-exercise, .session-exercise, .guide-hint) {
@@ -177,8 +153,7 @@
 }
 .app-shell .field,
 .studio-editor > *,
-.module-panel,
-.food-shortcuts > * {
+.module-panel {
   min-width: 0;
 }
 :where(.app-shell, [role='dialog']) :is(button, a, input, select, textarea, summary):focus-visible {
@@ -214,8 +189,7 @@
     align-self: stretch;
     justify-content: end;
   }
-  .app-shell :is(.module-nav, .form-actions, .exercise-flow-actions) [data-slot='button'],
-  .food-shortcuts button {
+  .app-shell :is(.module-nav, .form-actions, .exercise-flow-actions) [data-slot='button'] {
     min-height: 44px;
     height: auto;
     white-space: normal;
@@ -242,8 +216,7 @@
   .app-shell .student-bottom-nav a {
     min-width: 0;
   }
-  .app-shell .studio-editor select,
-  .fuel-food-dialog select {
+  .app-shell .studio-editor select {
     max-width: 100%;
   }
 }

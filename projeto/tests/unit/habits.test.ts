@@ -37,6 +37,7 @@ describe('Constância de treinos programados', () => {
     const next = consistency(week, [...four, done(7)], addDays(monday, 7));
     expect(next).toMatchObject({
       streak: 5,
+      bestStreak: 5,
       weekStreak: 1,
       goalWeeks: 1,
       weekly: 1,
@@ -49,6 +50,7 @@ describe('Constância de treinos programados', () => {
     const activity = [done(0, true), done(1), done(1)];
     expect(consistency(week, activity, addDays(monday, 2))).toMatchObject({ weekly: 1, streak: 1 });
     expect(consistency(week, activity, addDays(monday, 3)).streak).toBe(0);
+    expect(consistency(week, activity, addDays(monday, 3)).bestStreak).toBe(1);
   });
   it('mantém compromissos passados, mesmo após editar os dias ou cancelar a pausa', () => {
     const edited = setWeekdays(week, [4], addDays(monday, 2));

@@ -58,7 +58,7 @@ test('rotina independente registra conclusão manual, descanso e preferência de
     .getByRole('link', { name: /perfil/i })
     .click();
   await page.getByRole('checkbox', { name: 'Mostrar sequência e mascote' }).uncheck();
-  await page.locator('.desktop-sidebar').getByRole('link', { name: 'Hoje', exact: true }).click();
+  await page.locator('.desktop-sidebar').getByRole('link', { name: 'Início', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Minha rotina' })).toBeVisible();
   await expect(page.locator('.habit-banner')).toHaveCount(0);
 });

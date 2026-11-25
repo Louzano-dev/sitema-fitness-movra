@@ -6,6 +6,7 @@
 @import '../components/universal.css';
 @import '../features/training.css';
 @import '../features/library.css';
+@import '../features/student/workout-share.css';
 
 @theme inline {
   --color-background: var(--background);

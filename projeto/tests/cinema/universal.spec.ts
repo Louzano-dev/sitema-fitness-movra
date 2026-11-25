@@ -11,20 +11,24 @@ test('Páginas principais permitem navegar com 320 CSS px', async ({ page }) => 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const student of [false, true]) {
     await enter(page, student);
+    await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
+    await expect(
+      page
+        .getByRole('dialog')
+        .getByRole('link', { name: /conversas|alimentação|encontrar personal/i }),
+    ).toHaveCount(0);
+    await page.getByRole('dialog').getByRole('button', { name: 'Fechar', exact: true }).click();
     const labels = student
-      ? ['Hoje', 'Meus treinos', 'Conversas', 'Meu personal', 'Encontrar personal', 'Evolução', 'Alimentação', 'Agenda', 'Meu perfil']
+      ? ['Início', 'Meus treinos', 'Meu personal', 'Evolução', 'Agenda', 'Meu perfil']
       : [
           'Visão geral',
           'Alunos',
-          'Conversas',
-          'Meu negócio',
+          'Perfil profissional',
           'Treinos',
           'MOVRA Studio',
           'Exercícios',
           'Evolução física',
           'Agenda',
-          'Alimentação',
-          'Configurações',
         ];
     for (const label of labels) {
       await test.step(label, async () => {
@@ -121,27 +125,6 @@ test('Modo guiado acompanha cadastro, edição, correção e retorno por teclado
   await page.getByRole('button', { name: 'Ver prévia da semana', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Prévia da semana', exact: true })).toBeFocused();
 });
-test('Fuel registra dois itens na mesma refeição e respeita a preferência do adulto', async ({
-  page,
-}) => {
-  await enter(page, true);
-  await navigate(page, 'Alimentação');
-  await page.getByRole('button', { name: 'Adicionar alimento', exact: true }).click();
-  await page.getByLabel('Buscar alimento').fill('arroz');
-  await page.getByLabel('Alimento da biblioteca').selectOption('usda-168878');
-  await page.getByRole('button', { name: 'Registrar e adicionar outro' }).click();
-  await expect(page.getByLabel('Buscar alimento')).toBeFocused();
-  await page.getByLabel('Buscar alimento').fill('feijao');
-  await page.getByLabel('Alimento da biblioteca').selectOption({ index: 0 });
-  await page.getByRole('button', { name: 'Registrar alimento', exact: true }).click();
-  await expect(page.locator('.meal-card')).toHaveCount(1);
-  await expect(page.locator('.food-row')).toHaveCount(2);
-  await navigate(page, 'Meu perfil');
-  await page.getByLabel('Exibir estimativas numéricas no meu diário').uncheck();
-  await navigate(page, 'Alimentação');
-  await expect(page.locator('.nutrition-numbers')).toHaveCount(0);
-  await expect(page.locator('.food-row')).toHaveCount(2);
-});
 test('Reflow, teclado e registro com texto ampliado', async ({ page }) => {
   test.setTimeout(100000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -180,7 +163,7 @@ test('Reflow, teclado e registro com texto ampliado', async ({ page }) => {
   expect(result.violations.map((v) => [v.id, v.nodes.map((n) => n.target)])).toEqual([]);
 });
 
-test('Zoom real de 200% no Chrome preserva o acesso à navegação e ao diário', async () => {
+test('Zoom real de 200% no Chrome preserva o acesso à navegação e à biblioteca', async () => {
   const context = await chromium.launchPersistentContext('', {
     channel: 'chrome',
     viewport: null,
@@ -205,13 +188,11 @@ test('Zoom real de 200% no Chrome preserva o acesso à navegação e ao diário'
     await enter(page, true);
     expect(await page.evaluate(() => outerWidth / innerWidth)).toBeCloseTo(2, 1);
     await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
-    await page.getByRole('dialog').getByRole('link', { name: 'Alimentação', exact: true }).click();
-    await page.getByRole('button', { name: 'Adicionar alimento', exact: true }).click();
-    await page.getByLabel('Buscar alimento').fill('arroz');
-    await page.getByLabel('Alimento da biblioteca').selectOption('usda-168878');
+    await page.getByRole('dialog').getByRole('link', { name: 'Meus treinos', exact: true }).click();
     await checkWidth(page);
-    await page.getByRole('button', { name: 'Registrar alimento', exact: true }).click();
-    await expect(page.locator('.food-row')).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Meus treinos' })).toBeVisible();
+    await page.getByRole('button', { name: 'Histórico', exact: true }).click();
+    await expect(page.locator('.history-row').first()).toBeVisible();
   } finally {
     await context.close();
   }

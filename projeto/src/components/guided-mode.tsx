@@ -99,18 +99,17 @@ const instructions: Record<string, string> = {
     'Abra o treino do dia. Durante a sessão, você poderá ajustar a carga e registrar cada série.',
   '/aluno/treinos': 'Escolha uma ficha e use Iniciar treino para ver as orientações do personal.',
   '/aluno/historico': 'Abra uma sessão para rever os exercícios e as séries registradas.',
+  '/aluno/personal': 'Consulte o código, link ou QR recebido do seu personal e confirme o vínculo.',
   '/aluno/evolucao': 'Consulte as medidas registradas ao longo do acompanhamento.',
   '/admin': 'Consulte as organizações, planos e assinaturas pelo menu de navegação.',
 };
 export function PageGuide({ path }: { path: string }) {
   const help =
     instructions[path] ??
-    (path.endsWith('/alimentacao')
-      ? 'Escolha Adicionar alimento, pesquise pelo nome e informe a quantidade que consumiu.'
-      : path.startsWith('/aluno/treinos/')
-        ? 'Leia as orientações, ajuste carga e repetições e marque a série realizada. Você pode desmarcá-la para corrigir o registro.'
-        : path.startsWith('/personal/treinos/')
-          ? 'Escolha o aluno e os exercícios. Revise a ficha para conferir o que será enviado.'
-          : undefined);
+    (path.startsWith('/aluno/treinos/')
+      ? 'Leia as orientações, ajuste carga e repetições e marque a série realizada. Você pode desmarcá-la para corrigir o registro.'
+      : path.startsWith('/personal/treinos/')
+        ? 'Escolha o aluno e os exercícios. Revise a ficha para conferir o que será enviado.'
+        : undefined);
   return help ? <GuideHint topic={path}>{help}</GuideHint> : null;
 }

@@ -25,7 +25,7 @@ test('biblioteca portátil salva, prioriza, arquiva, restaura e desfaz a remoç�
     await expect(program.locator('.library-tags')).toContainText('Principal');
     await program.getByRole('button', { name: 'Arquivar ficha' }).click();
     await expect(program).toHaveCount(0);
-    await page.getByRole('button', { name: 'Salvos', exact: true }).click();
+    await page.getByRole('button', { name: 'Arquivados', exact: true }).click();
     await program.locator('summary').click();
     await program.getByRole('button', { name: 'Restaurar ficha' }).click();
     await page.getByRole('button', { name: 'Em uso', exact: true }).click();

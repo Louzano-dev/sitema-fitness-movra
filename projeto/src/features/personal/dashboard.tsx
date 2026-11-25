@@ -24,7 +24,6 @@ import {
 } from '@/components/shared';
 import { Button } from '@/components/ui/button';
 import { TrendChart } from '@/components/charts';
-import { FuelOverview } from '@/features/fuel';
 import { DEMO_DATE } from '@/domain/types';
 import { formatDate, studentSessions } from '@/domain/selectors';
 export function PersonalDashboard() {
@@ -315,7 +314,6 @@ export function PersonalDashboard() {
             </div>
           </Panel>
         </div>
-        <FuelOverview personal />
       </div>
     </>
   );

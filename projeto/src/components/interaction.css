@@ -130,10 +130,6 @@ html[data-shared-surface] [data-slot='dialog-content'] {
   grid-column: 2;
   grid-row: 4;
 }
-.personal-command > .fuel-overview {
-  grid-column: 1/-1;
-  margin: 0;
-}
 .personal-command .chart-readout {
   display: flex;
   align-items: center;
@@ -165,10 +161,6 @@ html[data-shared-surface] [data-slot='dialog-content'] {
 }
 .personal-command .agenda-time {
   font: 500 22px var(--font-display);
-}
-.meal-card .nutrition-numbers [aria-hidden],
-.nutrition-numbers strong {
-  font-variant-numeric: tabular-nums;
 }
 .cardio-clock-wrap {
   background: #172c29;
@@ -269,8 +261,7 @@ html[data-shared-surface] [data-slot='dialog-content'] {
   }
   .personal-command > .welcome-banner,
   .personal-command > .stats-grid,
-  .personal-command > .overview-actions,
-  .personal-command > .fuel-overview {
+  .personal-command > .overview-actions {
     width: 100%;
   }
   .personal-command > .dashboard-grid,
@@ -288,9 +279,6 @@ html[data-shared-surface] [data-slot='dialog-content'] {
   }
   .personal-command > .dashboard-bottom {
     order: 4;
-  }
-  .personal-command > .fuel-overview {
-    order: 5;
   }
   .personal-command .chart {
     height: 220px;

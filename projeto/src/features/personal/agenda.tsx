@@ -1,8 +1,9 @@
 'use client';
 import { useState, useSyncExternalStore } from 'react';
 import { useDemoSession } from '@/components/demo-session';
-import { marketplaceService, linkAllows } from '@/services/marketplace-service';
-import { connectService } from '@/services/connect-service';
+import { professionalService, linkAllows } from '@/services/professional-service';
+import { currentWorkspaceAppointments } from '@/services/connect-workspace';
+import { connectService, type ConnectAccount } from '@/services/connect-service';
 import { CalendarDays, Plus, Video } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
 import {
@@ -25,8 +26,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { DEMO_DATE, type Appointment } from '@/domain/types';
+import { addDays, civilDate } from '@/domain/habits';
 import { errorMessage } from '@/domain/schemas';
-import { formatDate, minutes } from '@/domain/selectors';
+import { formatDate } from '@/domain/selectors';
 function CancelAppointment({
   appointment,
   onCancelled,
@@ -49,8 +51,8 @@ function CancelAppointment({
         <DialogHeader>
           <DialogTitle>Cancelar este encontro?</DialogTitle>
           <DialogDescription>
-            O agendamento de {formatDate(appointment.date)} às {appointment.time} será marcado como
-            cancelado apenas nesta demonstração.
+            O encontro de {formatDate(appointment.date)} às {appointment.time} ficará no histórico
+            como cancelado.
           </DialogDescription>
         </DialogHeader>
         <Feedback error={error} />
@@ -86,12 +88,13 @@ export function AgendaPage() {
   const repository = useRepository();
   const { session } = useDemoSession();
   const account = session?.account;
-  useSyncExternalStore(marketplaceService.subscribe, marketplaceService.revision, () => 0);
+  useSyncExternalStore(professionalService.subscribe, professionalService.revision, () => 0);
   useSyncExternalStore(connectService.subscribe, connectService.revision, () => 0);
   const students = data.students.filter(
     (s) => !account || !s.id.startsWith('s-') || linkAllows(account.id, s.id, 'appointments'),
   );
-  const [date, setDate] = useState(DEMO_DATE);
+  const firstDay = account ? civilDate() : DEMO_DATE;
+  const [date, setDate] = useState(firstDay);
   const [editing, setEditing] = useState<Appointment>();
   const [showCanceled, setShowCanceled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -101,17 +104,13 @@ export function AgendaPage() {
   const appointments = data.appointments
     .filter((a) => a.date === date && (showCanceled || a.status === 'Agendado'))
     .sort((a, b) => a.time.localeCompare(b.time));
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const day = new Date(`${DEMO_DATE}T12:00:00`);
-    day.setDate(day.getDate() + i);
-    return day.toISOString().slice(0, 10);
-  });
+  const days = Array.from({ length: 7 }, (_, index) => addDays(firstDay, index));
   return (
     <>
       <PageHeader
-        eyebrow="Agenda e agendamentos"
-        title="Tempo reservado para acompanhar."
-        description="Organize os encontros e mantenha uma rotina de presença."
+        eyebrow="Acompanhamento"
+        title="Agenda"
+        description="Organize os encontros com seus alunos e os horários de atendimento."
         action={
           <Dialog
             open={open}
@@ -129,9 +128,9 @@ export function AgendaPage() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{editing ? 'Reagendar encontro' : 'Um próximo encontro.'}</DialogTitle>
+                <DialogTitle>{editing ? 'Reagendar encontro' : 'Agendar encontro'}</DialogTitle>
                 <DialogDescription>
-                  Crie um agendamento fictício. Conflitos de horário são verificados nesta agenda.
+                  O encontro será salvo na agenda local do personal e do aluno vinculado.
                 </DialogDescription>
               </DialogHeader>
               <form
@@ -156,7 +155,7 @@ export function AgendaPage() {
                     setDate(nextDate);
                     setOpen(false);
                     setSuccess(
-                      editing ? 'Encontro reagendado.' : 'Encontro adicionado nesta demonstração.',
+                      editing ? 'Encontro reagendado.' : 'Encontro agendado.',
                     );
                     setEditing(undefined);
                   } catch (err) {
@@ -189,8 +188,8 @@ export function AgendaPage() {
                       id="appointment-date"
                       type="date"
                       name="date"
-                      min={DEMO_DATE}
-                      defaultValue={editing?.date ?? date}
+                      min={firstDay}
+                      defaultValue={editing?.date ?? (date || firstDay)}
                       required
                     />
                   </Field>
@@ -228,7 +227,7 @@ export function AgendaPage() {
                 </div>
                 <Feedback error={error} />
                 <Button type="submit" disabled={busy}>
-                  {busy ? 'Salvando…' : editing ? 'Salvar novo horário' : 'Agendar na prévia'}
+                  {busy ? 'Salvando…' : editing ? 'Salvar novo horário' : 'Salvar agendamento'}
                 </Button>
               </form>
             </DialogContent>
@@ -237,8 +236,8 @@ export function AgendaPage() {
       />
       <Feedback success={success} />
       {!open && <Feedback error={error} />}
-      {account?.role === 'personal' && (
-        <Availability trainerId={account.id} date={date} appointments={data.appointments} />
+      {!!date && account?.role === 'personal' && (
+        <Availability account={account} date={date} />
       )}
       <Panel>
         <div className="toolbar">
@@ -343,7 +342,7 @@ export function AgendaPage() {
                       appointment={a}
                       onCancelled={() =>
                         setSuccess(
-                          'Encontro cancelado nesta demonstração. O horário está livre novamente.',
+                          'Encontro cancelado. O horário está livre novamente.',
                         )
                       }
                     />
@@ -363,18 +362,10 @@ export function AgendaPage() {
   );
 }
 
-function Availability({
-  trainerId,
-  date,
-  appointments,
-}: {
-  trainerId: string;
-  date: string;
-  appointments: Appointment[];
-}) {
+function Availability({ account, date }: { account: ConnectAccount; date: string }) {
   const [error, setError] = useState(''),
     [success, setSuccess] = useState('');
-  const rows = marketplaceService.business(trainerId).slots.filter((s) => s.date === date);
+  const rows = professionalService.slots(account.id, date);
   return (
     <Panel>
       <details>
@@ -392,20 +383,9 @@ function Availability({
             try {
               setError('');
               setSuccess('');
-              if (
-                kind === 'Bloqueado' &&
-                appointments.some(
-                  (a) =>
-                    a.date === date &&
-                    a.status === 'Agendado' &&
-                    a.time < end &&
-                    minutes(a.time) + a.duration > minutes(start),
-                )
-              )
-                throw Error(
-                  'Reagende ou cancele o encontro existente antes de bloquear este horário.',
-                );
-              await marketplaceService.setSlot(trainerId, { date, start, end, kind });
+              await professionalService.setSlot(account.id, { date, start, end, kind }, () =>
+                currentWorkspaceAppointments(account),
+              );
               setSuccess('Faixa de horário salva.');
             } catch (err) {
               setError(errorMessage(err));
@@ -438,7 +418,7 @@ function Availability({
               size="sm"
               onClick={async () => {
                 try {
-                  await marketplaceService.removeSlot(trainerId, r.id);
+                  await professionalService.removeSlot(account.id, r.id);
                   setError('');
                   setSuccess('Faixa removida.');
                 } catch (e) {

@@ -12,12 +12,10 @@ import { MockRepository } from '@/services/mock/repository';
 import { DemoSessionProvider, useDemoSession } from './demo-session';
 import { openConnectWorkspace, workspaceStorage } from '@/services/connect-workspace';
 import { connectService, type ConnectAccount } from '@/services/connect-service';
-import { startConversationRetention } from '@/services/messaging-service';
 import { Button } from './ui/button';
 const RepositoryContext = createContext<MovraRepository | null>(null);
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [repository] = useState(() => new MockRepository());
-  useEffect(() => startConversationRetention(), []);
   useEffect(() => {
     try {
       repository.attachStorage(window.localStorage);

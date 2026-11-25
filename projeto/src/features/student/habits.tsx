@@ -24,6 +24,7 @@ import {
 } from '@/domain/habits';
 import { formatDate } from '@/domain/selectors';
 import { Companion } from './companion';
+import { WorkoutShareButton } from './workout-share';
 import './habits.css';
 
 const labelDate = (d: string) =>
@@ -165,7 +166,7 @@ function HabitBanner({ progress, studentId }: { progress: Progress; studentId: s
     >
       <div className="habit-banner-copy">
         <p className="habit-label">
-          <HabitFire burst={evolution !== null} /> Sua constância
+          <HabitFire burst={evolution !== null} /> Sua sequência
         </p>
         <h2>
           <strong>{progress.streak}</strong>{' '}
@@ -176,6 +177,7 @@ function HabitBanner({ progress, studentId }: { progress: Progress; studentId: s
             em sequência
           </span>
         </h2>
+        <p className="habit-best">Melhor sequência: {progress.bestStreak}</p>
         <p className="habit-stage-label">
           Estágio {stage + 1} <span>·</span> {stages[stage].name}
         </p>
@@ -289,6 +291,10 @@ export function HabitsPanel({ settings = false }: { settings?: boolean }) {
   const [error, setError] = useState(''),
     [message, setMessage] = useState('');
   const [reward, setReward] = useState<CompletionReward | null>(null);
+  const [registeredId, setRegisteredId] = useState<string>();
+  const registered = data.sessions.find(
+    (item) => item.id === registeredId && item.studentId === studentId,
+  );
   const selected = selection ?? days;
   const initial = !routine.plans.length;
   const latest = data.workouts.find((w) => w.studentId === studentId && w.weekday);
@@ -425,6 +431,14 @@ export function HabitsPanel({ settings = false }: { settings?: boolean }) {
             );
           })}
         </ul>
+        {progress.target > 0 && (
+          <progress
+            className="habit-week-progress"
+            value={progress.weekly}
+            max={progress.target}
+            aria-label="Treinos programados concluídos nesta semana"
+          />
+        )}
         {initial && (
           <p className="habit-calendar-note">Escolha seus dias para definir a meta semanal.</p>
         )}
@@ -545,6 +559,7 @@ export function HabitsPanel({ settings = false }: { settings?: boolean }) {
                     f.get('extra') === 'on',
                   );
                   setReward(completionReward(before, repo.getSnapshot(), studentId, id));
+                  setRegisteredId(id);
                   e.currentTarget.reset();
                   setMessage('Treino declarado no histórico de hoje.');
                   setError('');
@@ -576,6 +591,7 @@ export function HabitsPanel({ settings = false }: { settings?: boolean }) {
           </details>
         )}
         {routine.visible && reward && <HabitCelebration key={reward.id} reward={reward} />}
+        {registered && <WorkoutShareButton source={{ kind: 'workout', session: registered }} />}
         <Feedback success={message} error={error} />
       </div>
     </section>

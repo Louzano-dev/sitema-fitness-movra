@@ -14,7 +14,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { formatDate, sessionVolume, studentSessions } from '@/domain/selectors';
-export function HistoryPage({embedded = false}:{embedded?:boolean} = {}) {
+import { WorkoutShareButton } from './workout-share';
+export function HistoryPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { studentId: activeStudentId } = useDemoSession();
   const data = useDemo();
   const [period, setPeriod] = useState('all');
@@ -23,13 +24,15 @@ export function HistoryPage({embedded = false}:{embedded?:boolean} = {}) {
   );
   return (
     <>
-      {!embedded && <PageHeader
-        eyebrow="Histórico de treinos"
-        title="Cada registro conta uma parte."
-        description="Revise o que você executou. As sessões preservam os valores registrados, mesmo se o treino for editado depois."
-      />}
+      {!embedded && (
+        <PageHeader
+          eyebrow="Histórico de treinos"
+          title="Cada registro conta uma parte."
+          description="Revise o que você executou. As sessões preservam os valores registrados, mesmo se o treino for editado depois."
+        />
+      )}
       <Panel>
-        <CardioHistory studentId={activeStudentId}/>
+        <CardioHistory studentId={activeStudentId} />
         <div className="toolbar">
           <label className="sr-only" htmlFor="history-period">
             Período do histórico
@@ -58,52 +61,59 @@ export function HistoryPage({embedded = false}:{embedded?:boolean} = {}) {
                   {s.extra && ' · Treino extra'}
                 </p>
               </div>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label={`Ver registro de ${s.title} em ${formatDate(s.date)}`}
-                  >
-                    Ver registro
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{s.title}</DialogTitle>
-                    <DialogDescription>
-                      {formatDate(s.date)} · {s.duration} min · registro demonstrativo
-                    </DialogDescription>
-                  </DialogHeader>
-                  <TableRegion label="Séries registradas">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th scope="col">Exercício / série</th>
-                          <th scope="col">kg</th>
-                          <th scope="col">Reps</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {s.sets.map((log) => (
-                          <tr key={`${log.exerciseId}-${log.set}`}>
-                            <td>
-                              {s.exerciseNames[log.exerciseId] ?? log.exerciseId} · {log.set}
-                            </td>
-                            <td>{log.kg}</td>
-                            <td>{log.reps}</td>
+              <div className="share-history-actions">
+                <WorkoutShareButton
+                  source={{ kind: 'workout', session: s }}
+                  label={`Compartilhar treino ${s.title} em ${formatDate(s.date)}`}
+                  compact
+                />
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      aria-label={`Ver registro de ${s.title} em ${formatDate(s.date)}`}
+                    >
+                      Ver registro
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{s.title}</DialogTitle>
+                      <DialogDescription>
+                        {formatDate(s.date)} · {s.duration} min · registro demonstrativo
+                      </DialogDescription>
+                    </DialogHeader>
+                    <TableRegion label="Séries registradas">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">Exercício / série</th>
+                            <th scope="col">kg</th>
+                            <th scope="col">Reps</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </TableRegion>
-                  <p className="form-help">
-                    Volume registrado: {sessionVolume(s.sets).toLocaleString('pt-BR')}{' '}
-                    kg·repetições. Soma de carga × repetições; não é um indicador clínico.
-                  </p>
-                  {s.note && <p>Feedback registrado: {s.note}</p>}
-                </DialogContent>
-              </Dialog>
+                        </thead>
+                        <tbody>
+                          {s.sets.map((log) => (
+                            <tr key={`${log.exerciseId}-${log.set}`}>
+                              <td>
+                                {s.exerciseNames[log.exerciseId] ?? log.exerciseId} · {log.set}
+                              </td>
+                              <td>{log.kg}</td>
+                              <td>{log.reps}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </TableRegion>
+                    <p className="form-help">
+                      Volume registrado: {sessionVolume(s.sets).toLocaleString('pt-BR')}{' '}
+                      kg·repetições. Soma de carga × repetições; não é um indicador clínico.
+                    </p>
+                    {s.note && <p>Feedback registrado: {s.note}</p>}
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           ))
         ) : (

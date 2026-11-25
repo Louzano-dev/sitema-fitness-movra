@@ -1,20 +1,8 @@
 import type { MovraRepository } from './repository';
-import {
-  foodSchema,
-  mealSchema,
-  programSchema,
-  gramsFor,
-  totalNutrients,
-  foodNutrients,
-  type Program,
-  type Food,
-  type Meal,
-} from '@/domain/experience';
-import { FOODS } from '@/domain/foods';
+import { programSchema, type Program } from '@/domain/experience';
 import { studioCatalog } from '@/domain/exercise-catalog';
 import { reviewReasons } from '@/domain/training-engine';
 import { assessProgram } from '@/domain/training-plan';
-import type { DemoState, Environment } from '@/domain/types';
 export const newId = () => crypto.randomUUID();
 export function saveProgram(repository: MovraRepository, input: Program): Program {
   const previous = repository.getSnapshot().experience.programs.find((p) => p.id === input.id);
@@ -45,7 +33,11 @@ export function approveProgram(
   if (!program || !reviewed) throw new Error('A revisão explícita do profissional é obrigatória.');
   if (new Set(program.days.map((day) => day.weekday)).size !== program.days.length)
     throw new Error('Organize os dias da semana sem duplicações antes de aprovar.');
-  const { errors } = assessProgram(program.days, program.questionnaire, studioCatalog(state.exercises));
+  const { errors } = assessProgram(
+    program.days,
+    program.questionnaire,
+    studioCatalog(state.exercises),
+  );
   if (errors.length) throw new Error(errors.join(' '));
   const age = state.experience.ages[program.studentId];
   if (
@@ -67,95 +59,4 @@ export function approveProgram(
     versions: [structuredClone(approved), ...state.versions],
   }));
   return approved;
-}
-export function foodsFor(state: DemoState, studentId: string): Food[] {
-  return [...FOODS, ...state.experience.foods.filter((f) => f.ownerId === studentId)];
-}
-export const PERSONAL_FUEL_ID = 'personal:org-1';
-export function sharedMeals(state: DemoState, role: Environment, studentId: string): Meal[] {
-  if (
-    role === 'admin' ||
-    (role === 'personal' && studentId !== PERSONAL_FUEL_ID) ||
-    (role === 'aluno' && studentId === PERSONAL_FUEL_ID)
-  )
-    return [];
-  return state.experience.meals.filter((m) => m.studentId === studentId);
-}
-export function saveMeal(repository: MovraRepository, input: Meal, studentId: string): Meal {
-  if (input.studentId !== studentId) throw new Error('Identidade da refeição divergente.');
-  const foods = foodsFor(repository.getSnapshot(), studentId);
-  const parsed = mealSchema.parse({
-    ...input,
-    id: input.id || newId(),
-    items: input.items.map((item) => {
-      const food = foods.find((f) => f.id === item.foodId);
-      if (!food) throw new Error('Alimento não disponível para este perfil.');
-      return { ...item, id: item.id || newId(), grams: gramsFor(food, item.quantity, item.unit) };
-    }),
-  });
-  repository.updateExperience((state) => ({
-    ...state,
-    meals: [parsed, ...state.meals.filter((m) => m.id !== parsed.id)],
-  }));
-  return parsed;
-}
-export function saveFood(
-  repository: MovraRepository,
-  input: Food,
-  studentId: string,
-  referenceGrams = 100,
-): Food {
-  if (!Number.isFinite(referenceGrams) || referenceGrams <= 0)
-    throw new Error('Porção de referência inválida.');
-  const per100g = Object.fromEntries(
-    Object.entries(input.per100g).map(([key, value]) => [
-      key,
-      value === null ? null : (value * 100) / referenceGrams,
-    ]),
-  );
-  const food = foodSchema.parse({
-    ...input,
-    id: input.id || newId(),
-    ownerId: studentId,
-    per100g,
-    source: 'Informado pelo usuário · sem validação externa',
-    sourceId: '',
-  });
-  repository.updateExperience((state) => ({
-    ...state,
-    foods: [food, ...state.foods.filter((f) => f.id !== food.id)],
-  }));
-  return food;
-}
-export function recipeFood(
-  foods: Food[],
-  ingredients: { foodId: string; grams: number }[],
-  yieldGrams: number,
-  name: string,
-): Food {
-  if (!ingredients.length || !Number.isFinite(yieldGrams) || yieldGrams <= 0)
-    throw new Error('Informe ingredientes e peso final medido da receita.');
-  const total = totalNutrients(
-    ingredients.map((item) => {
-      const food = foods.find((f) => f.id === item.foodId);
-      if (!food) throw new Error('Ingrediente não encontrado.');
-      return foodNutrients(food, item.grams);
-    }),
-  );
-  return {
-    id: '',
-    name,
-    brand: '',
-    category: 'Preparações',
-    source: 'Receita do usuário',
-    sourceId: '',
-    portions: [{ label: 'Receita completa', grams: yieldGrams }],
-    per100g: Object.fromEntries(
-      Object.entries(total.values).map(([key, value]) => [
-        key,
-        value === null ? null : (value * 100) / yieldGrams,
-      ]),
-    ) as Food['per100g'],
-    recipe: { ingredients, yieldGrams },
-  };
 }

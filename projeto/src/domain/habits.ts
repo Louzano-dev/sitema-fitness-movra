@@ -142,6 +142,7 @@ export function consistency(routine: Routine, activities: Activity[], today: str
   });
   const first = routine.plans[0]?.from;
   let streak = 0,
+    bestStreak = 0,
     goalWeeks = 0,
     weekStreak = 0,
     planned = 0,
@@ -153,6 +154,7 @@ export function consistency(routine: Routine, activities: Activity[], today: str
         planned++;
         if (completed.has(day)) {
           streak++;
+          bestStreak = Math.max(bestStreak, streak);
           met++;
         } else if (day < today) streak = 0;
       }
@@ -191,6 +193,7 @@ export function consistency(routine: Routine, activities: Activity[], today: str
   return {
     days,
     streak,
+    bestStreak,
     weekStreak,
     goalWeeks,
     next,
