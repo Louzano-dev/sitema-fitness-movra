@@ -27,7 +27,7 @@ Acesse http://localhost:3000/entrar somente para manutenção com Next.js. Para 
 
 Consulte a [documentação do motor de treinos 2.0](docs/motor-treinos-v2.md) para reproduzir exemplos, entender as estimativas e revisar a entrega ao aluno.
 
-O Personal acessa **MOVRA Studio**: questionário em seis etapas, geração determinística por regras versionadas, editor de dias/exercícios, comparação de regeneração, modelos, revisão e aprovação de versões, atribuição ao aluno correto. Contextos especiais seguem planejamento manual supervisionado; o gerador não é IA nem validação clínica.
+O Personal acessa **MOVRA Studio**: entrada simplificada com prévia semanal, geração determinística por regras versionadas, editor de dias/exercícios, comparação de regeneração, modelos, revisão e aprovação de versões, atribuição ao aluno correto. Contextos especiais seguem planejamento manual supervisionado; o gerador não é IA nem validação clínica.
 
 O Aluno acessa **Alimentação / MOVRA Fuel**: refeições por data, quantidades, medidas específicas, edição/duplicação, favoritos, alimentos próprios, receitas com peso final informado e resumo exportável. Números nutricionais são opcionais e indisponíveis para menores; compartilhar com o Personal é uma escolha desativada por padrão e revogável. O catálogo inicial contém 17 alimentos USDA identificados, sem atribuição à TBCA.
 

@@ -142,6 +142,8 @@ export function cardioStages(s: Cardio) {
     : [{ id: s.id, type: s.type, seconds: s.minutes * 60, intensity: s.intensity, notes: s.notes }];
 }
 export const cardioRecordSchema = z.object({
+  completedAt: z.iso.datetime().optional(),
+  independent: z.boolean().optional(),
   id: z.string(),
   studentId: z.string(),
   workoutId: z.string(),

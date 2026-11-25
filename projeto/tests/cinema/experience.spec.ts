@@ -69,11 +69,10 @@ for (const width of [390, 1280])
     await enter(page);
     await page.setViewportSize({ width, height: 900 });
     await navigate(page, 'MOVRA Studio');
-    await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-    await page.getByRole('button', { name: 'Gerar treino personalizado', exact: true }).click();
-    for (let step = 0; step < 5; step++)
-      await page.getByRole('button', { name: 'Continuar', exact: true }).click();
-    await page.getByRole('button', { name: 'Gerar proposta de treino', exact: true }).click();
+    await page.getByRole('button', { name: 'Gerar para mim', exact: true }).click();
+    await page.getByRole('button', { name: 'Ver prévia da semana' }).click();
+    await expect(page.locator('.model-week li')).toHaveCount(3);
+    await page.getByRole('button', { name: 'Gerar treino', exact: true }).click();
     await expect(page.locator('.studio-editor')).toBeVisible();
     await expect(page.locator('.day-tab')).toHaveCount(3);
     await page.getByLabel('Nome da ficha', { exact: true }).fill('Ficha Studio validada');
@@ -108,7 +107,8 @@ for (const width of [390, 1280])
     await expect(page.locator('#entry-form')).toBeVisible();
     await page.getByRole('button', { name: 'Aluno / atleta', exact: true }).click();
     await page.getByRole('button', { name: 'Entrar na demonstração', exact: true }).click();
-    await navigate(page, 'Histórico');
+    await navigate(page, 'Meus treinos');
+    await page.getByRole('button',{name:'Histórico',exact:true}).click();
     await expect(
       page.locator('.history-row').filter({ hasText: 'Ficha Studio validada' }),
     ).toHaveCount(1);
@@ -123,7 +123,8 @@ for (const width of [390, 1280])
     await page.getByLabel('Nome da ficha', { exact: true }).fill('Nova versão Studio');
     await approve(page);
     await switchRole(page, 'aluno');
-    await navigate(page, 'Histórico');
+    await navigate(page, 'Meus treinos');
+    await page.getByRole('button',{name:'Histórico',exact:true}).click();
     await expect(
       page.locator('.history-row').filter({ hasText: 'Ficha Studio validada' }),
     ).toHaveCount(1);
@@ -135,12 +136,11 @@ for (const width of [390, 1280])
 test('Studio bloqueia geração automática de menores e contexto especial', async ({ page }) => {
   await enter(page);
   await navigate(page, 'MOVRA Studio');
-  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-  await page.getByRole('button', { name: 'Gerar treino personalizado', exact: true }).click();
-  await page.getByLabel('Idade fictícia').fill('16');
-  for (let step = 0; step < 5; step++)
-    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
-  await page.getByRole('button', { name: 'Gerar proposta de treino', exact: true }).click();
+  await page.getByRole('button', { name: 'Gerar para mim', exact: true }).click();
+  await page.getByRole('spinbutton', { name: 'Idade', exact: true }).fill('16');
+  await page.getByRole('button', { name: 'Ver prévia da semana' }).click();
+  await expect(page.locator('.model-week li')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Gerar treino', exact: true }).click();
   await expect(page.locator('.studio-editor')).toHaveCount(0);
   await expect(page.locator('.review-required')).toContainText('Menor de idade');
   await page.getByRole('button', { name: 'Abrir planejamento supervisionado' }).click();
@@ -148,9 +148,21 @@ test('Studio bloqueia geração automática de menores e contexto especial', asy
   await expect(page.getByRole('button', { name: 'Atribuir ficha ao aluno' })).toBeDisabled();
   await navigate(page, 'Alunos');
   await navigate(page, 'MOVRA Studio');
-  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-  await page.getByRole('button', { name: 'Gerar treino personalizado', exact: true }).click();
-  await expect(page.getByLabel('Idade fictícia')).toHaveValue('16');
+  await page.getByRole('button', { name: 'Gerar para mim', exact: true }).click();
+  const age = page.getByRole('spinbutton', { name: 'Idade', exact: true });
+  await expect(age).toHaveValue('16');
+  await age.fill('30');
+  await page
+    .getByLabel('Contexto especial, dor relevante ou condição que exige avaliação individual', {
+      exact: true,
+    })
+    .check();
+  await page.getByRole('button', { name: 'Ver prévia da semana', exact: true }).click();
+  await page.getByRole('button', { name: 'Gerar treino', exact: true }).click();
+  await expect(page.locator('.studio-editor')).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Abrir planejamento supervisionado' }),
+  ).toBeVisible();
 });
 
 for (const width of [390, 1280])
@@ -246,8 +258,7 @@ test('Fuel alimento personalizado, estimativa parcial e receita', async ({ page 
 test('Studio manual: biblioteca, parâmetros, duplicação, ordem e modelo', async ({ page }) => {
   await enter(page);
   await navigate(page, 'MOVRA Studio');
-  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-  await page.getByRole('button', { name: 'Criar treino do zero', exact: true }).click();
+  await page.getByRole('button', { name: 'Criar do zero', exact: true }).click();
   await page.getByLabel('Nome da ficha', { exact: true }).fill('Modelo manual validado');
   await page.getByRole('button', { name: 'Adicionar exercícios', exact: true }).click();
   await page.getByLabel('Pesquisar exercício para adicionar').fill('abdominal');
@@ -272,7 +283,7 @@ test('Studio manual: biblioteca, parâmetros, duplicação, ordem e modelo', asy
   await expect(page.getByRole('dialog')).toContainText('Modelo manual validado');
   await expect(page.getByRole('dialog')).toContainText('Instrução fictícia revisável.');
   await page.getByRole('button', { name: 'Fechar', exact: true }).click();
-  await page.getByRole('button', { name: 'Explorar modelos', exact: true }).click();
+  await page.getByRole('button', { name: 'Modelos salvos', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Usar modelo', exact: true })).toHaveCount(1);
 });
 
@@ -297,8 +308,7 @@ test('Studio e Fuel: acessibilidade, redução de movimento e redefinição', as
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
     .analyze();
   expect(result.violations).toEqual([]);
-  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-  await page.getByRole('button', { name: 'Gerar treino personalizado', exact: true }).click();
+  await page.getByRole('button', { name: 'Gerar para mim', exact: true }).click();
   result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
     .analyze();

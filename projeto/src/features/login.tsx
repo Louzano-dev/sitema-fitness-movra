@@ -1,4 +1,5 @@
 'use client';
+import { ConnectEntry } from './connect-entry';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import gsap from 'gsap';
@@ -352,6 +353,7 @@ export function LoginPage() {
                 <ArrowUpRight size={18} />
               </Button>
             </form>
+            {role !== 'admin' && <ConnectEntry role={role}/>}
             <div className="entry-security">
               <Info size={17} />
               <p>

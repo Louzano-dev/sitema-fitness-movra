@@ -2,13 +2,15 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { STUDENT_ID, type Environment } from '@/domain/types';
 import type { MovraRepository } from '@/services/repository';
-type Session = { role: Environment; name: string };
+import { connectService, type ConnectAccount } from '@/services/connect-service';
+type Session = { role: Environment; name: string; account?: ConnectAccount; invitation?: string };
 type SessionValue = {
   session: Session | null;
   suggestedRole: Environment;
   studentId: string;
   switchProfile: (role?: Environment) => void;
   enter: (role: Environment, name: string, email?: string, studentId?: string) => Promise<void>;
+  enterAccount: (account: ConnectAccount, invitation?: string) => void;
   leave: () => void;
 };
 const Context = createContext<SessionValue | null>(null);
@@ -44,19 +46,30 @@ export function DemoSessionProvider({
       },
       selectedId,
     );
+    connectService.activate(null);
     setSession({ role, name: clean });
   }
+  function enterAccount(account: ConnectAccount, invitation?: string) {
+    connectService.activate(account.id);
+    setStudentId(account.role === 'aluno' ? account.id : STUDENT_ID);
+    setSession({ role: account.role, name: account.name, account, invitation });
+  }
   function leave() {
+    connectService.activate(null);
     setSession(null);
     setStudentId(STUDENT_ID);
     setSuggestedRole('personal');
   }
   function switchProfile(role: Environment = session?.role === 'personal' ? 'aluno' : 'personal') {
+    connectService.activate(null);
+    setStudentId(STUDENT_ID);
     setSuggestedRole(role);
     setSession(null);
   }
   return (
-    <Context value={{ session, suggestedRole, studentId, enter, switchProfile, leave }}>
+    <Context
+      value={{ session, suggestedRole, studentId, enter, enterAccount, switchProfile, leave }}
+    >
       {children}
     </Context>
   );

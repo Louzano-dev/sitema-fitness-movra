@@ -1,5 +1,13 @@
 'use client';
-import { Fragment, useEffect, useState, type ReactNode } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 import { useDemoSession } from './demo-session';
 import { GuideProvider, GuideToggle, PageGuide } from './guided-mode';
 import { PageMotion } from './motion';
@@ -26,12 +34,16 @@ import {
   Settings2,
   Users,
   Wallet,
-  History,
+  MessageCircle,
+  Store,
+  Compass,
   UserRound,
   House,
   WandSparkles,
   Apple,
 } from 'lucide-react';
+import { connectService } from '@/services/connect-service';
+import { linkAllows, marketplaceService } from '@/services/marketplace-service';
 import { Brand } from './brand';
 import { Avatar } from './shared';
 import { useDemo } from './providers';
@@ -50,6 +62,8 @@ const navigation = {
   personal: [
     { href: '/personal', label: 'Visão geral', icon: LayoutDashboard },
     { href: '/personal/alunos', label: 'Alunos', icon: Users },
+    { href: '/personal/conversas', label: 'Conversas', icon: MessageCircle },
+    { href: '/personal/negocio', label: 'Meu negócio', icon: Store },
     { href: '/personal/evolucao', label: 'Evolução física', icon: ChartNoAxesCombined },
     { href: '/personal/agenda', label: 'Agenda', icon: CalendarDays },
     { href: '/personal/treinos', label: 'Treinos', icon: ClipboardList },
@@ -61,7 +75,9 @@ const navigation = {
   aluno: [
     { href: '/aluno', label: 'Hoje', icon: House },
     { href: '/aluno/treinos', label: 'Meus treinos', icon: ClipboardList },
-    { href: '/aluno/historico', label: 'Histórico', icon: History },
+    { href: '/aluno/conversas', label: 'Conversas', icon: MessageCircle },
+    { href: '/aluno/personal', label: 'Meu personal', icon: Users },
+    { href: '/aluno/marketplace', label: 'Encontrar personal', icon: Compass },
     { href: '/aluno/evolucao', label: 'Evolução', icon: Activity },
     { href: '/aluno/alimentacao', label: 'Alimentação', icon: Apple },
     { href: '/aluno/agenda', label: 'Agenda', icon: CalendarDays },
@@ -123,7 +139,34 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
   }, [session, role, router]);
   const data = useDemo();
   const [menuOpen, setMenuOpen] = useState(false);
-  const items = navigation[role];
+  const drawerDestination = useRef<string | null>(null);
+  function closeDrawerForNavigation(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (
+      !event.currentTarget.closest('.mobile-drawer') ||
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    event.preventDefault();
+    drawerDestination.current = href === path ? null : href;
+    setMenuOpen(false);
+  }
+  useSyncExternalStore(marketplaceService.subscribe, marketplaceService.revision, () => 0);
+  const showAgenda =
+    role !== 'aluno' ||
+    !session?.account ||
+    data.appointments.some((a) => a.studentId === studentId) ||
+    connectService
+      .professionalLinks(studentId)
+      .some(
+        (l) =>
+          l.endedAt === null && linkAllows(l.trainerId, studentId, 'appointments', l.startedAt),
+      );
+  const items = navigation[role].filter((item) => item.href !== '/aluno/agenda' || showAgenda);
   const current =
     [...items]
       .reverse()
@@ -175,7 +218,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
               }
               aria-current={active ? 'page' : undefined}
               className={cn('sidebar-link', active && 'active')}
-              onClick={() => setMenuOpen(false)}
+              onClick={(event) => closeDrawerForNavigation(event, href)}
             >
               <Icon size={19} aria-hidden />
               <span>
@@ -197,7 +240,7 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
         href={`/${role}`}
         className="sidebar-brand"
         aria-label="MOVRA, início do ambiente"
-        onClick={() => setMenuOpen(false)}
+        onClick={(event) => closeDrawerForNavigation(event, `/${role}`)}
       >
         <Brand />
       </Link>
@@ -223,7 +266,9 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
             <Avatar name={profile.name} />
             <div>
               <strong>{profile.name}</strong>
-              <span>{role === 'personal' ? 'Estúdio Horizonte' : labels[role]}</span>
+              <span>
+                {role === 'personal' && !session?.account ? 'Estúdio Horizonte' : labels[role]}
+              </span>
             </div>
           </button>
         </AccountMenu>
@@ -298,7 +343,16 @@ export function AppShell({ role, children }: { role: Environment; children: Reac
                     <Menu />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="mobile-drawer translate-x-0! translate-y-0!">
+                <DialogContent
+                  className="mobile-drawer translate-x-0! translate-y-0!"
+                  onCloseAutoFocus={(event) => {
+                    const destination = drawerDestination.current;
+                    if (!destination) return;
+                    drawerDestination.current = null;
+                    event.preventDefault();
+                    router.push(destination);
+                  }}
+                >
                   <DialogHeader className="sr-only">
                     <DialogTitle>Navegação MOVRA</DialogTitle>
                     <DialogDescription>

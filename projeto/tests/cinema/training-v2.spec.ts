@@ -22,16 +22,50 @@ test('Semana A/B/C e exercício autoral chegam à prévia e ao aluno com os mesm
       .locator('.desktop-sidebar')
       .getByRole('link', { name: 'MOVRA Studio', exact: true })
       .click();
-    await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-    await page.getByRole('button', { name: 'Explorar modelos', exact: true }).click();
-    await page.getByRole('button', { name: 'Intermediário · A/B/C · 3 dias' }).click();
+    await page.getByRole('button', { name: 'Gerar para mim', exact: true }).click();
+    await page.getByRole('button', { name: 'Ver prévia da semana', exact: true }).click();
+    await page.getByRole('button', { name: 'Personalizar', exact: true }).click();
+    await page
+      .locator('summary')
+      .filter({ hasText: /^Segunda ·/ })
+      .click();
+    await page.getByLabel('Foco de Segunda', { exact: true }).selectOption('Inferior');
+    await expect(page.locator('.model-week li').first()).toContainText('Inferior');
+    await page.getByRole('button', { name: 'Gerar treino', exact: true }).click();
+    await expect(page.locator('.studio-editor')).toBeVisible();
+    await page.getByRole('button', { name: 'Minhas fichas', exact: true }).click();
+    await page.getByRole('button', { name: 'Escolher divisão', exact: true }).click();
+    await page.getByRole('button', { name: 'Por grupos musculares', exact: true }).click();
+    await page.getByRole('button', { name: 'ABC combinado', exact: true }).click();
+    const student = page.getByLabel('Aluno', { exact: true });
+    await student.selectOption('bruno');
+    await student.selectOption('ana');
+    await page.getByLabel('Nível atual').selectOption('Intermediário');
+    await page.getByLabel('Tempo por sessão (min)').fill('60');
+    await page.getByRole('button', { name: 'Ver prévia da semana' }).click();
+    await expect(page.getByRole('heading', { name: 'ABC combinado' })).toBeVisible();
+    await expect(page.locator('.model-week')).toContainText('Peito e tríceps');
+    await page.getByRole('button', { name: 'Mudar divisão' }).click();
+    await page.getByRole('button', { name: 'Ver outros modelos', exact: true }).click();
+    await page.getByRole('button', { name: 'Personalizada', exact: true }).click();
+    await page.getByText('Segunda · Corpo inteiro', { exact: true }).click();
+    await page
+      .getByRole('group', { name: 'Grupos de Segunda', exact: true })
+      .getByLabel('Quadríceps', { exact: true })
+      .check();
+    await expect(page.locator('.model-week li').first()).toContainText('Quadríceps');
+    await page.getByRole('button', { name: 'Editar dados do treino' }).click();
+    await page.getByRole('button', { name: 'Ver prévia da semana' }).click();
+    await expect(page.locator('.model-week li').first()).toContainText('Quadríceps');
+    await page.getByRole('button', { name: 'Mudar divisão' }).click();
+    await page.getByLabel('Buscar divisão por nome ou finalidade').fill('Push/Pull');
+    await page.getByRole('button', { name: 'Push/Pull/Legs', exact: true }).click();
+    await expect(page.locator('.model-week')).toContainText('Empurrar');
+    await page.getByRole('button', { name: 'Editar dados do treino' }).click();
     await expect(page.getByLabel('Nível atual')).toHaveValue('Intermediário');
-    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
-    await expect(page.getByLabel('Divisão da proposta')).toHaveValue('A/B/C');
-    await page.getByRole('button', { name: 'Continuar', exact: true }).click();
     await expect(page.getByLabel('Tempo por sessão (min)')).toHaveValue('60');
-    await page.getByRole('button', { name: 'Etapa 6: Revisão' }).click();
-    await page.getByRole('button', { name: 'Gerar proposta de treino' }).click();
+    await page.getByRole('button', { name: 'Ver prévia da semana' }).click();
+    await page.getByRole('button', { name: 'Gerar treino' }).click();
     await expect(page.locator('.day-tab')).toHaveCount(3);
     for (const button of await page.locator('.day-tab').all()) {
       await button.click();
@@ -89,7 +123,7 @@ test('Semana A/B/C e exercício autoral chegam à prévia e ao aluno com os mesm
       .locator('.desktop-sidebar')
       .getByRole('link', { name: 'Meus treinos', exact: true })
       .click();
-    for (const [i, label] of ['A · Empurrar', 'B · Puxar', 'C · Inferior'].entries()) {
+    for (const [i, label] of ['Empurrar', 'Puxar', 'Pernas'].entries()) {
       const card = page.locator('.workout-card').filter({ hasText: label });
       await card.getByRole('link', { name: 'Iniciar treino', exact: true }).click();
       await page.getByText(/Consultar ficha completa/).click();

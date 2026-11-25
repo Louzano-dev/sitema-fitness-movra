@@ -131,7 +131,7 @@ describe('Cardio profissional', () => {
       days: ['Segunda'],
       location: 'Academia',
       coaching: 'Presencial',
-      equipment: ['Peso corporal', 'Esteira'],
+      equipment: ['Peso corporal', 'Elásticos', 'Esteira'],
       excluded: [],
       avoidPatterns: [],
       notes: '',
@@ -148,9 +148,10 @@ describe('Cardio profissional', () => {
       },
     };
     const result = generateProgram(q);
-    expect(generateProgram(q)).toEqual(result);
     expect(result.kind).toBe('proposal');
     if (result.kind === 'proposal') {
+      const repeat = generateProgram(q);
+      expect(repeat.kind === 'proposal' && repeat.program.days).toEqual(result.program.days);
       expect(result.program.days[0].cardio?.[0].type).toBe('Contínuo');
       const duration = estimateDay(result.program.days[0]);
       expect(duration.cardio).toBe(600);

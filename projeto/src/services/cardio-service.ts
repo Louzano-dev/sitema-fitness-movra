@@ -1,5 +1,6 @@
 import { cardioRecordSchema, type CardioRecord } from '@/domain/cardio';
 import type { MovraRepository } from './repository';
+import { civilDate } from '@/domain/habits';
 export function saveCardioRecord(
   repository: MovraRepository,
   input: CardioRecord,
@@ -24,6 +25,10 @@ export function saveCardioRecord(
   const previous = state.experience.cardioRecords?.find((r) => r.id === record.id);
   if (previous && (previous.studentId !== studentId || previous.workoutId !== record.workoutId))
     throw new Error('Registro de outra identidade.');
+  const instant = new Date();
+  record.date = previous?.date ?? civilDate(instant, state.experience.habits?.[studentId]?.zone);
+  record.completedAt = previous ? previous.completedAt : instant.toISOString();
+  record.independent = !workout.exercises.length;
   repository.updateExperience((s) => ({
     ...s,
     cardioRecords: [

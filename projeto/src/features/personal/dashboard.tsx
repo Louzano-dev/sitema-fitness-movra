@@ -1,4 +1,5 @@
 'use client';
+import {ConnectPanel} from '../connect-panel';
 import { useState } from 'react';
 import { AnimatedNumber } from '@/components/animated-number';
 import Link from 'next/link';
@@ -75,6 +76,7 @@ export function PersonalDashboard() {
           </Button>
         }
       />
+      <ConnectPanel/>
       <div className="personal-command">
         <div className="welcome-banner">
           <div>

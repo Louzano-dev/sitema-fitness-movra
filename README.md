@@ -2,9 +2,26 @@
 
 **[Acessar a demonstração da MOVRA na Vercel](https://sitema-fitness-movra.vercel.app/entrar)**
 
+## MOVRA 7.0 na versão local
+
+No painel **Hoje**, o aluno inicia ou retoma a ficha e acompanha a meta da semana. Em **Evolução e conquistas**, o companheiro MOVRA passa por Início, Ritmo, Firme, Força e Elite após 0, 1, 3, 6 e 12 semanas encerradas com a meta cumprida. Abrir o aplicativo apenas acende o indicador. Os dias de descanso preservam a sequência. Em **Meu personal**, a consulta por código, link ou QR permite conferir o profissional antes de confirmar o vínculo.
+
+- Em **Meus treinos**, escolha o programa principal, salve, arquive ou restaure uma ficha e consulte o histórico. A cópia personalizada atribuída pelo Connect permanece disponível após encerrar o vínculo. O modelo do profissional continua no espaço dele.
+- Em **Meu personal**, gerencie os acompanhamentos. O Connect permite manter mais de um treinador. **Encontrar personal** reúne os perfis publicados neste navegador. Em **Meu negócio**, o personal apresenta seu currículo e define os serviços oferecidos.
+- O aluno pode escolher dias de treino e acompanhar sua constância na visão geral. Os dias planejados são independentes das reservas de horário. Cada conversa pertence a um vínculo. As mídias são locais e os vídeos têm validade de sete dias. Com a aplicação fechada, a limpeza física aguarda uma nova abertura.
+- Para experimentar a troca entre personal e aluno, abra as duas contas locais na mesma cópia do aplicativo e no mesmo navegador. A seleção de serviços é demonstrativa. Verificação documental, pagamentos, sincronização entre dispositivos e descarte de mídias em servidor dependem de infraestrutura externa.
+
+## Studio e Connect
+
+No **MOVRA Studio**, escolha **Gerar para mim** para receber uma sugestão com base nos dados do aluno, **Escolher divisão** para consultar modelos por finalidade ou **Criar do zero** para montar uma ficha manual. O catálogo reúne 11 modelos de organização semanal. Confira a semana antes de gerar. O editor permite revisar cada dia, a cobertura muscular e a prévia que será entregue ao aluno.
+
+Em **MOVRA Connect**, selecione Personal ou Aluno na entrada e abra **Criar ou abrir conta local**. O personal encontra seus convites no dashboard. O aluno pode continuar sem personal, solicitar vínculo por código público ou confirmar um convite individual por link, câmera ou imagem do QR Code. O personal aprova solicitações por código e pode revogar convites individuais. O compartilhamento pelo WhatsApp abre uma mensagem para o usuário enviar.
+
+Contas, convites e fichas desta demonstração ficam no armazenamento do navegador. Para experimentar os dois lados, selecione as contas na mesma origem e no mesmo navegador. O endereço publicado e cada cópia local do HTML podem ter armazenamentos diferentes. Autenticação, controle de acesso no servidor e sincronização entre aparelhos dependem de um backend futuro.
+
 Ative **Modo guiado** acima do conteúdo para receber orientações por tarefa. O Studio reúne as opções de criar, revisar e atribuir fichas. No diário alimentar, **Registrar e adicionar outro** permite lançar vários alimentos na mesma refeição. [Uso e validação da experiência universal](projeto/docs/experiencia-universal.md).
 
-Biblioteca ampliada para **319 exercícios e variações**, com busca, filtros e carregamento em lotes. O Personal pode informar observações opcionais por exercício e para o treino inteiro; as instruções aparecem ao aluno durante a execução. [Lista completa do catálogo](projeto/docs/exercicios.md). O Studio usa 62 movimentos classificados para gerar propostas por nível, divisão, equipamento e tempo disponível. [Regras, exemplos para os três níveis e referências](projeto/docs/motor-treinos-v2.md).
+Biblioteca ampliada para **319 exercícios e variações**, com busca, filtros e carregamento em lotes. O Personal pode informar observações opcionais por exercício e para o treino inteiro; as instruções aparecem ao aluno durante a execução. [Lista completa do catálogo](projeto/docs/exercicios.md). O Studio usa 96 movimentos com função, equipamento e dificuldade classificados para gerar propostas por nível, divisão, equipamento e tempo disponível. [Histórico do motor 2.0 e referências](projeto/docs/motor-treinos-v2.md).
 
 O dashboard e os editores usam transições entre aluno e perfil, treino e editor, exercício e instruções, alimento e quantidade. [Detalhes das interações](projeto/docs/interaction-refinement.md).
 
@@ -23,12 +40,14 @@ O HTML contém a aplicação, vídeo de entrada, poster, fontes, estilos e JavaS
 
 A entrada não autentica uma conta. Não há senha, login social ou proteção de produção. Use somente dados fictícios.
 
+Os alertas de cobertura do Full Body usam frequência semanal e individualização como referências. A duração é estimada pelas séries, repetições, descansos, transições e cardio. [Recomendações do ACSM para adultos saudáveis](https://acsm.org/resistance-training-guidelines-update-2026/).
+
 ## Ambiente do Personal
 
 - **Dashboard:** indicadores derivados dos registros demonstrativos, gráficos por período, agenda e ações rápidas.
 - **Alunos:** busca, filtros, cadastro, edição e perfil detalhado com treinos, sessões, feedback e evolução.
 - **Treinos:** criação manual, edição, modelos, duplicação e atribuição de fichas.
-- **MOVRA Studio:** questionário em seis etapas e propostas determinísticas por regras, sem IA. Editor de dias, exercícios, séries, repetições fixas/intervalos, descanso, carga opcional e instruções. Inclui regeneração com comparação, preservação de exercícios, desfazer e prévia.
+- **MOVRA Studio:** entrada simplificada com prévia semanal e propostas determinísticas por regras, sem IA. Editor de dias, exercícios, séries, repetições fixas/intervalos, descanso, carga opcional e instruções. Inclui regeneração com comparação, preservação de exercícios, desfazer e prévia.
 - **Aprovação e versões:** revisão explícita antes de atribuir; versões aprovadas e sessões concluídas preservam seus registros anteriores.
 - **Biblioteca:** exercícios com busca, filtros, instruções, equipamentos, favoritos e alternativas. Mídia técnica não cadastrada é identificada.
 - **Cardio:** modalidades aeróbicas, cadastro de modalidades próprias, editor de blocos/ciclos, intensidade e parâmetros aplicáveis. Pode acompanhar a musculação ou compor um dia independente.

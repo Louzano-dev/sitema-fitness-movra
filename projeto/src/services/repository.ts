@@ -27,7 +27,8 @@ export interface MovraRepository {
   subscribe(listener: () => void): () => void;
   saveStudent(input: StudentInput, id?: string): Promise<string>;
   saveWorkout(input: WorkoutInput, id?: string): Promise<string>;
-  saveAppointment(input: AppointmentInput): Promise<void>;
+  saveAppointment(input: AppointmentInput, id?: string): Promise<void>;
+  confirmAppointment(id: string): Promise<void>;
   cancelAppointment(id: string): Promise<void>;
   saveMeasurement(input: MeasurementInput): Promise<void>;
   saveProfile(role: Environment, input: Profile, studentId?: string): Promise<void>;
@@ -40,5 +41,7 @@ export interface MovraRepository {
     duration: number,
     studentId?: string,
     note?: string,
+    confirmation?: 'recorded' | 'manual',
   ): Promise<string>;
+  recordIndependentWorkout(studentId: string, title: string, minutes: number, extra: boolean): string;
 }

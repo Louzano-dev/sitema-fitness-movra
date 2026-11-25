@@ -1,3 +1,5 @@
+import { librarySchema } from './student-library';
+import { habitSchema } from './habits';
 import { z } from 'zod';
 import { cardioSchema, cardioRecordSchema, modalitySchema, cardioQuestionSchema } from './cardio';
 
@@ -68,6 +70,8 @@ export const questionnaireSchema = z
     notes: z.string().max(1000),
     specialContext: z.boolean(),
     split: z.enum(SPLITS),
+    modelId: z.string().min(1).optional(),
+    dayGroups: z.partialRecord(z.enum(WEEKDAYS), z.array(z.string().min(1)).max(12)).optional(),
     dayFocus: z.partialRecord(z.enum(WEEKDAYS), z.enum(DAY_FOCUS)).optional(),
     priority: z.string().max(60).optional(),
     cardio: cardioQuestionSchema.optional(),
@@ -99,6 +103,7 @@ export const daySchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(100),
   weekday: z.string(),
+  groups: z.array(z.string().max(60)).max(20).optional(),
   instructions: z.string().max(1000),
   exercises: z.array(studioExerciseSchema).max(20),
   cardio: z.array(cardioSchema).max(10).optional(),
@@ -169,6 +174,8 @@ export const mealSchema = z.object({
 });
 export type Meal = z.infer<typeof mealSchema>;
 export const experienceSchema = z.object({
+  libraries: z.record(z.string(), librarySchema).optional(),
+  habits: z.record(z.string(), habitSchema).optional(),
   cardioRecords: z.array(cardioRecordSchema).optional(),
   cardioModalities: z.array(modalitySchema).optional(),
   programs: z.array(programSchema),

@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { formatDate, sessionVolume, studentSessions } from '@/domain/selectors';
-export function HistoryPage() {
+export function HistoryPage({embedded = false}:{embedded?:boolean} = {}) {
   const { studentId: activeStudentId } = useDemoSession();
   const data = useDemo();
   const [period, setPeriod] = useState('all');
@@ -23,11 +23,11 @@ export function HistoryPage() {
   );
   return (
     <>
-      <PageHeader
+      {!embedded && <PageHeader
         eyebrow="Histórico de treinos"
         title="Cada registro conta uma parte."
         description="Revise o que você executou. As sessões preservam os valores registrados, mesmo se o treino for editado depois."
-      />
+      />}
       <Panel>
         <CardioHistory studentId={activeStudentId}/>
         <div className="toolbar">
@@ -54,6 +54,8 @@ export function HistoryPage() {
                 <h3>{s.title}</h3>
                 <p>
                   {formatDate(s.date)} · {s.duration} min · {s.sets.length} séries
+                  {s.source === 'manual' && ' · Declarado pelo aluno'}
+                  {s.extra && ' · Treino extra'}
                 </p>
               </div>
               <Dialog>

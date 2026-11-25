@@ -1,9 +1,13 @@
 'use client';
 import { GuideHint, useGuide } from '@/components/guided-mode';
 import { useMemo, useRef, useState } from 'react';
-import { CardioEditor, CardioQuestion } from './cardio';
+import { CardioEditor } from './cardio';
+import { StudioPlanning } from './studio-planning';
+import { TRAINING_GROUPS, modelFor } from '@/domain/training-models';
+import { normalize } from '@/domain/selectors';
+import type { DemoState } from '@/domain/types';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Check, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowRight, Check, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
 import { PageHeader, Panel, Field, Feedback, EmptyState } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -18,11 +22,8 @@ import {
 } from '@/components/ui/dialog';
 import { PageMotion, useExerciseReorder } from '@/components/motion';
 import {
-  EQUIPMENT,
   GOALS,
   WEEKDAYS,
-  SPLITS,
-  DAY_FOCUS,
   questionnaireSchema,
   type Questionnaire,
   type Program,
@@ -32,19 +33,13 @@ import {
 import { StudioLibrary } from './studio-library';
 import { WorkoutOutline } from '@/components/workout-outline';
 import { deliverDay } from '@/domain/workout-delivery';
-import { estimateDay, weekVolume, muscleFor, movements } from '@/domain/training-plan';
+import { estimateDay, assessProgram } from '@/domain/training-plan';
 import { studioCatalog } from '@/domain/exercise-catalog';
-import {
-  generateProgram,
-  regenerateDays,
-  RULE_VERSION,
-  reviewReasons,
-} from '@/domain/training-engine';
+import { generateProgram, regenerateDays, RULE_VERSION } from '@/domain/training-engine';
 import { approveProgram, newId, saveProgram } from '@/services/experience-service';
 import { errorMessage } from '@/domain/schemas';
 
-const initialQuestionnaire: Omit<Questionnaire, 'age'> = {
-  studentId: 'ana',
+const initialQuestionnaire: Omit<Questionnaire, 'age' | 'studentId'> = {
   experience: 'Até um ano',
   level: 'Iniciante',
   goal: 'Condicionamento geral',
@@ -60,20 +55,24 @@ const initialQuestionnaire: Omit<Questionnaire, 'age'> = {
   specialContext: false,
   split: 'Full body',
 };
-const weeklyModels: Pick<Questionnaire, 'level' | 'split' | 'days' | 'minutes'>[] = [
-  { level: 'Iniciante', split: 'Full body', days: ['Segunda', 'Quarta', 'Sexta'], minutes: 45 },
-  { level: 'Intermediário', split: 'A/B/C', days: ['Segunda', 'Quarta', 'Sexta'], minutes: 60 },
-  {
-    level: 'Avançado',
-    split: 'Upper/Lower',
-    days: ['Segunda', 'Terça', 'Quinta', 'Sexta'],
-    minutes: 60,
-  },
-];
-const makeDay = (): TrainingDay => ({
+function studentQuestionnaire(data: DemoState, studentId: string): Questionnaire {
+  const student = data.students.find((item) => item.id === studentId);
+  const recent = data.experience.programs.find(
+    (p) => p.studentId === studentId && p.questionnaire?.studentId === studentId,
+  )?.questionnaire;
+  const profileGoal = normalize(student?.goal ?? '');
+  const matchingGoal = GOALS.find((goal) => normalize(goal) === profileGoal);
+  return {
+    ...structuredClone(recent ?? initialQuestionnaire),
+    studentId,
+    age: data.experience.ages[studentId] ?? recent?.age ?? NaN,
+    goal: matchingGoal ?? recent?.goal ?? initialQuestionnaire.goal,
+  };
+}
+const makeDay = (weekday: string = WEEKDAYS[0]): TrainingDay => ({
   id: newId(),
   name: 'Novo dia',
-  weekday: 'Segunda',
+  weekday,
   instructions: '',
   exercises: [],
 });
@@ -89,7 +88,6 @@ const makeRow = (exerciseId: string): StudioExercise => ({
 export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
   const [onlyReview, setOnlyReview] = useState(reviewQueue);
   const { enabled: guided } = useGuide();
-  const stepTitle = useRef<HTMLHeadingElement>(null);
   const [confirmation, setConfirmation] = useState<{
     title: string;
     description: string;
@@ -99,21 +97,22 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
   const data = useDemo();
   const repository = useRepository();
   const [view, setView] = useState<'home' | 'wizard' | 'editor' | 'templates' | 'versions'>('home');
-  const [step, setStep] = useState(0);
-  const [q, setQ] = useState<Questionnaire>(() => ({
-    ...initialQuestionnaire,
-    age: data.experience.ages[initialQuestionnaire.studentId] ?? NaN,
-  }));
+  const [startingStage, setStartingStage] = useState<'essentials' | 'models'>('essentials');
+  const [q, setQ] = useState<Questionnaire>(() =>
+    studentQuestionnaire(data, data.students[0]?.id ?? ''),
+  );
   const [draft, setDraft] = useState<Program | null>(null);
   const [undo, setUndo] = useState<Program[]>([]);
   const [dayIndex, setDayIndex] = useState(0);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const [revising, setRevising] = useState(false);
   const libraryButton = useRef<HTMLButtonElement>(null);
   const catalog = useMemo(() => studioCatalog(data.exercises), [data.exercises]);
-  const volume = useMemo(() => weekVolume(draft?.days ?? [], catalog), [draft?.days, catalog]);
+  const assessment = useMemo(
+    () => assessProgram(draft?.days ?? [], draft?.questionnaire, catalog),
+    [draft?.days, draft?.questionnaire, catalog],
+  );
   const exerciseName = (id: string) => catalog.find((e) => e.id === id)?.name ?? id;
   const context = { history: data.sessions, favorites: data.experience.exerciseFavorites };
   const [error, setError] = useState('');
@@ -122,8 +121,6 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
   const [pending, setPending] = useState<Program | null>(null);
   const [preview, setPreview] = useState(false);
   const [generation, setGeneration] = useState(0);
-  const change = <K extends keyof Questionnaire>(key: K, value: Questionnaire[K]) =>
-    setQ((current) => ({ ...current, [key]: value }));
   const act = (action: () => void) => {
     setError('');
     setFeedback('');
@@ -133,10 +130,23 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
       setError(errorMessage(error));
     }
   };
-  function goStep(next: number) {
+  function startPlanning(stage: 'models' | 'essentials') {
+    const profile = studentQuestionnaire(
+      data,
+      data.students.find((s) => s.id === q.studentId)?.id ?? data.students[0]?.id ?? '',
+    );
+    setQ({
+      ...profile,
+      modelId: undefined,
+      split: initialQuestionnaire.split,
+      dayFocus: undefined,
+      dayGroups: undefined,
+    });
+    setStartingStage(stage);
+    setRevising(false);
     setError('');
-    setStep(next);
-    requestAnimationFrame(() => stepTitle.current?.focus());
+    setFeedback('');
+    setView('wizard');
   }
   function leaveEditor(action: () => void) {
     const saved = data.experience.programs.find((program) => program.id === draft?.id);
@@ -184,12 +194,12 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
       exercises: day.exercises.map((row) => (row.id === id ? { ...row, ...patch } : row)),
     }));
   }
-  function blank(supervised = false) {
+  function blank(supervised = false, answers = q) {
     open({
       id: '',
       title: supervised ? 'Planejamento supervisionado' : 'Minha nova ficha',
-      studentId: q.studentId,
-      questionnaire: supervised ? q : undefined,
+      studentId: answers.studentId || data.students[0]?.id || '',
+      questionnaire: supervised ? answers : undefined,
       ruleVersion: RULE_VERSION,
       status: 'Rascunho',
       days: [makeDay()],
@@ -200,18 +210,9 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
       supervised,
     });
   }
-  function generate() {
+  function generate(answers: Questionnaire) {
     act(() => {
-      const parsed = questionnaireSchema.parse(
-        q.split === 'Personalizada'
-          ? {
-              ...q,
-              dayFocus: Object.fromEntries(
-                q.days.map((d) => [d, q.dayFocus?.[d] ?? 'Corpo inteiro']),
-              ),
-            }
-          : q,
-      );
+      const parsed = questionnaireSchema.parse(answers);
       repository.updateExperience((state) => ({
         ...state,
         ages: { ...state.ages, [q.studentId]: q.age },
@@ -265,9 +266,9 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
       <PageHeader
         eyebrow={
           view === 'wizard'
-            ? '1 · Para quem é o treino?'
+            ? 'MOVRA Studio · Planejamento'
             : view === 'editor'
-              ? '2 · Montar a proposta'
+              ? 'MOVRA Studio · Revisão'
               : 'MOVRA Studio · Treinamento'
         }
         title={
@@ -275,7 +276,7 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
             home: 'Criar e editar treinos',
             wizard: 'Gerar uma proposta de treino',
             editor: 'Editar ficha de treino',
-            templates: 'Escolher um modelo',
+            templates: 'Modelos salvos',
             versions: 'Histórico de versões',
           }[view]
         }
@@ -301,596 +302,109 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
       />
       <GuideHint topic={'studio-' + view}>
         {view === 'wizard'
-          ? 'Responda a uma etapa por vez. Use Voltar etapa para ajustar uma resposta antes de gerar a proposta.'
+          ? 'Confira os dados do aluno e veja como a semana será organizada. Você pode ajustar a divisão antes de gerar.'
           : view === 'editor'
             ? 'Escolha o dia, ajuste os exercícios e use Visualizar como o aluno. Depois de salvar, revise e aprove a versão para atribuí-la.'
-            : 'Comece pelo questionário, por uma ficha em branco ou por um modelo salvo.'}
+            : 'Escolha Gerar para mim para receber uma sugestão, selecione uma divisão ou crie sua própria ficha.'}
       </GuideHint>
       <Feedback error={error} success={feedback} />
-      {view === 'home' && !onlyReview && (
-        <div className="planning-entry">
-          <div className="studio-launch">
-            <button
-              aria-label="Criar treino"
-              aria-describedby="create-purpose"
-              aria-expanded={createOpen}
-              onClick={() => setCreateOpen(!createOpen)}
-            >
-              <strong>
-                Criar treino <Plus size={18} />
-              </strong>
-              <span id="create-purpose">Preparar uma ficha para um aluno.</span>
-            </button>
-            <button
-              onClick={() => {
-                setCreateOpen(false);
-                document.getElementById('studio-list-title')?.focus();
-              }}
-            >
-              <strong>
-                Minhas fichas <ArrowRight size={18} />
-              </strong>
-              <span>Abrir um rascunho ou uma versão salva.</span>
-            </button>
-          </div>
-          {createOpen && (
-            <div className="form-actions">
-              <Button
-                onClick={() => {
-                  setStep(0);
-                  setView('wizard');
-                }}
+      {view === 'home' &&
+        !onlyReview &&
+        (data.students.length ? (
+          <div className="planning-entry">
+            <div className="studio-launch">
+              <button
+                aria-label="Gerar para mim"
+                aria-describedby="studio-auto-description"
+                onClick={() => startPlanning('essentials')}
               >
-                Gerar treino personalizado
-              </Button>
-              <Button variant="outline" onClick={() => blank()}>
-                Criar treino do zero
-              </Button>
-              <Button variant="outline" onClick={() => setView('templates')}>
-                Explorar modelos
-              </Button>
+                <strong>
+                  Gerar para mim <ArrowRight size={18} />
+                </strong>
+                <span id="studio-auto-description">
+                  A MOVRA organiza uma sugestão de treino para seu aluno.
+                </span>
+              </button>
+              <button
+                aria-label="Escolher divisão"
+                aria-describedby="studio-model-description"
+                onClick={() => startPlanning('models')}
+              >
+                <strong>
+                  Escolher divisão <ArrowRight size={18} />
+                </strong>
+                <span id="studio-model-description">
+                  Escolha como organizar os treinos da semana.
+                </span>
+              </button>
+              <button
+                aria-label="Criar do zero"
+                aria-describedby="studio-manual-description"
+                onClick={() => blank()}
+              >
+                <strong>
+                  Criar do zero <Plus size={18} />
+                </strong>
+                <span id="studio-manual-description">
+                  Monte uma ficha completamente personalizada.
+                </span>
+              </button>
             </div>
-          )}
-        </div>
-      )}
-      <details className="studio-tools" open={!guided}>
-        <summary>Outras ferramentas do Studio</summary>
-        <div className="module-nav">
-          {view !== 'home' && (
-            <Button
-              variant="outline"
-              onClick={() =>
-                leaveEditor(() => {
-                  setStep(0);
-                  setView('wizard');
-                })
-              }
-            >
-              Gerar treino personalizado
-            </Button>
-          )}
-          {view !== 'home' && (
-            <Button variant="outline" onClick={() => leaveEditor(() => blank())}>
-              Criar treino do zero
-            </Button>
-          )}
-          {view !== 'home' && (
-            <Button variant="outline" onClick={() => leaveEditor(() => setView('templates'))}>
-              Explorar modelos
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => leaveEditor(() => setView('versions'))}>
-            Histórico de versões
-          </Button>
-        </div>
-      </details>
-      {view === 'wizard' && (
-        <Panel className="module-panel">
-          <PageMotion focusPage={false} route={`questionnaire-${step}`}>
-            {revising && draft && (
-              <Button variant="outline" onClick={() => setView('editor')}>
-                Voltar à ficha em edição
+          </div>
+        ) : (
+          <EmptyState
+            title="Cadastre seu primeiro aluno"
+            description="Com um aluno cadastrado, você poderá preparar e atribuir a ficha."
+            action={
+              <Link className="text-link" href="/personal/alunos">
+                Cadastrar aluno
+              </Link>
+            }
+          />
+        ))}
+      {view !== 'wizard' && (
+        <details className="studio-tools" open={!guided}>
+          <summary>Outras ferramentas do Studio</summary>
+          <div className="module-nav">
+            {view !== 'templates' && (
+              <Button variant="outline" onClick={() => leaveEditor(() => setView('templates'))}>
+                Modelos salvos
               </Button>
             )}
-            <p className="eyebrow">Etapa {step + 1} de 6</p>
-            <h2 ref={stepTitle} tabIndex={-1}>
-              {
-                [
-                  'Identificação',
-                  'Objetivo',
-                  'Disponibilidade',
-                  'Equipamentos',
-                  'Considerações individuais',
-                  'Revisão das respostas',
-                ][step]
-              }
-            </h2>
-            <progress
-              className="studio-progress"
-              aria-label="Progresso do questionário"
-              max={6}
-              value={step + 1}
-            />
-            <ol className="wizard-progress" aria-label="Etapas">
-              {['Identificação', 'Objetivo', 'Dias', 'Equipamentos', 'Contexto', 'Revisão'].map(
-                (name, index) => (
-                  <li key={name}>
-                    <button
-                      type="button"
-                      aria-current={step === index ? 'step' : undefined}
-                      aria-label={`Etapa ${index + 1}: ${name}`}
-                      onClick={() => goStep(index)}
-                    >
-                      {index + 1}
-                      <span>{name}</span>
-                    </button>
-                  </li>
-                ),
-              )}
-            </ol>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (step === 2 && q.days.length !== q.frequency) {
-                  setError(
-                    `Selecione ${q.frequency} dias da semana. Você marcou ${q.days.length}.`,
-                  );
-                  document.getElementById('studio-days')?.focus();
-                  return;
-                }
-                if (step < 5) goStep(step + 1);
-                else generate();
-              }}
-              className="form-stack"
-            >
-              {step === 0 && (
-                <div className="form-grid">
-                  <Field label="Aluno" htmlFor="studio-student">
-                    <select
-                      id="studio-student"
-                      className="native-select"
-                      value={q.studentId}
-                      onChange={(e) =>
-                        setQ({
-                          ...q,
-                          studentId: e.target.value,
-                          age: data.experience.ages[e.target.value] ?? NaN,
-                        })
-                      }
-                    >
-                      {data.students.map((student) => (
-                        <option key={student.id} value={student.id}>
-                          {student.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Idade fictícia" htmlFor="studio-age">
-                    <Input
-                      id="studio-age"
-                      type="number"
-                      min={5}
-                      max={100}
-                      required
-                      value={Number.isFinite(q.age) ? q.age : ''}
-                      onChange={(e) => change('age', e.target.valueAsNumber)}
-                    />
-                  </Field>
-                  <Field label="Experiência anterior" htmlFor="studio-experience">
-                    <select
-                      id="studio-experience"
-                      className="native-select"
-                      value={q.experience}
-                      onChange={(e) =>
-                        change('experience', e.target.value as Questionnaire['experience'])
-                      }
-                    >
-                      {['Sem experiência', 'Até um ano', 'Mais de um ano'].map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Nível atual" htmlFor="studio-level">
-                    <select
-                      id="studio-level"
-                      className="native-select"
-                      value={q.level}
-                      onChange={(e) => change('level', e.target.value as Questionnaire['level'])}
-                    >
-                      {['Iniciante', 'Intermediário', 'Avançado'].map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <p className="form-help">
-                    Idade não determina experiência. Preencha somente dados fictícios.
-                  </p>
-                </div>
-              )}
-              {step === 1 && (
-                <>
-                  <Field label="Objetivo" htmlFor="studio-goal">
-                    <select
-                      id="studio-goal"
-                      className="native-select"
-                      value={q.goal}
-                      onChange={(e) => change('goal', e.target.value as Questionnaire['goal'])}
-                    >
-                      {GOALS.map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  {guided && (
-                    <p className="form-help">
-                      A divisão organiza os exercícios entre os dias. Full body significa trabalhar
-                      o corpo todo em cada sessão.
-                    </p>
-                  )}
-                  <details className="studio-advanced">
-                    <summary>Prioridade muscular opcional</summary>
-                    <Field label="Grupo prioritário" htmlFor="priority-muscle">
-                      <select
-                        id="priority-muscle"
-                        className="native-select"
-                        value={q.priority ?? ''}
-                        onChange={(e) => change('priority', e.target.value)}
-                      >
-                        <option value="">Distribuir o volume</option>
-                        {[...new Set(movements.map((e) => muscleFor(e.id)))].map((m) => (
-                          <option key={m}>{m}</option>
-                        ))}
-                      </select>
-                    </Field>
-                  </details>
-                  <Field label="Divisão da proposta" htmlFor="studio-split">
-                    <select
-                      id="studio-split"
-                      className="native-select"
-                      value={q.split}
-                      onChange={(e) => change('split', e.target.value as Questionnaire['split'])}
-                    >
-                      {SPLITS.map((value) => (
-                        <option key={value}>{value}</option>
-                      ))}
-                    </select>
-                  </Field>
-                </>
-              )}
-              {step === 2 && (
-                <>
-                  <div className="form-grid">
-                    <Field label="Dias por semana" htmlFor="studio-frequency">
-                      <select
-                        id="studio-frequency"
-                        className="native-select"
-                        value={q.frequency}
-                        onChange={(e) => change('frequency', Number(e.target.value))}
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7].map((value) => (
-                          <option key={value}>{value}</option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Tempo por sessão (min)" htmlFor="studio-minutes">
-                      <Input
-                        id="studio-minutes"
-                        type="number"
-                        min={15}
-                        max={120}
-                        required
-                        value={q.minutes}
-                        onChange={(e) => change('minutes', Number(e.target.value))}
-                      />
-                    </Field>
-                    <Field label="Local" htmlFor="studio-location">
-                      <select
-                        id="studio-location"
-                        className="native-select"
-                        value={q.location}
-                        onChange={(e) =>
-                          change('location', e.target.value as Questionnaire['location'])
-                        }
-                      >
-                        {['Academia', 'Casa', 'Estúdio'].map((value) => (
-                          <option key={value}>{value}</option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Acompanhamento" htmlFor="studio-coaching">
-                      <select
-                        id="studio-coaching"
-                        className="native-select"
-                        value={q.coaching}
-                        onChange={(e) =>
-                          change('coaching', e.target.value as Questionnaire['coaching'])
-                        }
-                      >
-                        <option>Presencial</option>
-                        <option>Online</option>
-                      </select>
-                    </Field>
-                  </div>
-                  <fieldset>
-                    <legend
-                      id="studio-days"
-                      tabIndex={-1}
-                      aria-describedby={error ? 'studio-days-error' : undefined}
-                    >
-                      Dias disponíveis · selecione {q.frequency}
-                    </legend>
-                    {error && (
-                      <p id="studio-days-error" className="field-error">
-                        {error}
-                      </p>
-                    )}
-                    <div className="choice-grid">
-                      {WEEKDAYS.map((day) => (
-                        <label key={day} className="checkbox-row">
-                          <input
-                            type="checkbox"
-                            checked={q.days.includes(day)}
-                            onChange={(e) =>
-                              change(
-                                'days',
-                                e.target.checked
-                                  ? [...q.days, day]
-                                  : q.days.filter((item) => item !== day),
-                              )
-                            }
-                          />
-                          {day}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                  {q.split === 'Personalizada' &&
-                    WEEKDAYS.filter((d) => q.days.includes(d)).map((d) => (
-                      <Field key={d} label={'Foco de ' + d} htmlFor={'focus-' + d}>
-                        <select
-                          className="native-select"
-                          id={'focus-' + d}
-                          value={q.dayFocus?.[d] ?? 'Corpo inteiro'}
-                          onChange={(e) =>
-                            change('dayFocus', {
-                              ...q.dayFocus,
-                              [d]: e.target.value as (typeof DAY_FOCUS)[number],
-                            })
-                          }
-                        >
-                          {DAY_FOCUS.map((f) => (
-                            <option key={f}>{f}</option>
-                          ))}
-                        </select>
-                      </Field>
-                    ))}
-                </>
-              )}
-              {step === 3 && (
-                <fieldset>
-                  <legend>Equipamentos disponíveis</legend>
-                  <div className="choice-grid">
-                    {EQUIPMENT.map((item) => (
-                      <label key={item} className="checkbox-row">
-                        <input
-                          type="checkbox"
-                          checked={q.equipment.includes(item)}
-                          onChange={(e) =>
-                            change(
-                              'equipment',
-                              e.target.checked
-                                ? [...q.equipment, item]
-                                : q.equipment.filter((value) => value !== item),
-                            )
-                          }
-                        />
-                        {item}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
-              {step === 4 && (
-                <>
-                  <label className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={q.specialContext}
-                      onChange={(e) => change('specialContext', e.target.checked)}
-                    />
-                    Contexto especial, dor relevante ou condição que exige avaliação individual
-                  </label>
-                  <p className="form-help">
-                    Não descreva diagnósticos reais. Menores de 18 anos seguem planejamento manual
-                    supervisionado.
-                  </p>
-                  <Field
-                    label="Preferências, dificuldades e observações fictícias"
-                    htmlFor="studio-notes"
-                  >
-                    <Textarea
-                      id="studio-notes"
-                      maxLength={1000}
-                      value={q.notes}
-                      onChange={(e) => change('notes', e.target.value)}
-                    />
-                  </Field>
-                  <fieldset>
-                    <legend>Padrões que deseja evitar</legend>
-                    <div className="choice-grid">
-                      {[...new Set(catalog.map((e) => e.pattern))].map((pattern) => (
-                        <label key={pattern} className="checkbox-row">
-                          <input
-                            type="checkbox"
-                            checked={q.avoidPatterns.includes(pattern)}
-                            onChange={(e) =>
-                              change(
-                                'avoidPatterns',
-                                e.target.checked
-                                  ? [...q.avoidPatterns, pattern]
-                                  : q.avoidPatterns.filter((item) => item !== pattern),
-                              )
-                            }
-                          />
-                          {pattern}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                  <Field label="Excluir exercícios (seleção múltipla)" htmlFor="studio-excluded">
-                    <select
-                      id="studio-excluded"
-                      multiple
-                      className="native-select multi-select"
-                      value={q.excluded}
-                      onChange={(e) =>
-                        change(
-                          'excluded',
-                          [...e.target.selectedOptions].map((option) => option.value),
-                        )
-                      }
-                    >
-                      {catalog.map((exercise) => (
-                        <option key={exercise.id} value={exercise.id}>
-                          {exercise.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                </>
-              )}
-              {step === 5 && (
-                <>
-                  <CardioQuestion value={q.cardio} onChange={(value) => change('cardio', value)} />
-                  <dl className="review-grid">
-                    <div>
-                      <dt>Aluno / idade</dt>
-                      <dd>
-                        {data.students.find((s) => s.id === q.studentId)?.name} · {q.age} anos
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Nível / experiência</dt>
-                      <dd>
-                        {q.level} · {q.experience}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Objetivo / divisão</dt>
-                      <dd>
-                        {q.goal} · {q.split}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Disponibilidade</dt>
-                      <dd>
-                        {q.frequency} dias · {q.minutes} min · {q.days.join(', ')}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Equipamentos</dt>
-                      <dd>{q.equipment.join(', ') || 'Nenhum selecionado'}</dd>
-                    </div>
-                    <div>
-                      <dt>Exclusões</dt>
-                      <dd>{q.excluded.map(exerciseName).join(', ') || 'Nenhuma'}</dd>
-                    </div>
-                    <div>
-                      <dt>Observações</dt>
-                      <dd>{q.notes || 'Sem observações'}</dd>
-                    </div>
-                  </dl>
-                  {reviewReasons(q).length > 0 && (
-                    <div className="review-required" role="status">
-                      <h3>Revisão individual obrigatória</h3>
-                      {reviewReasons(q).map((reason) => (
-                        <p key={reason}>{reason}</p>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          repository.updateExperience((state) => ({
-                            ...state,
-                            ages: { ...state.ages, [q.studentId]: q.age },
-                          }));
-                          blank(true);
-                        }}
-                      >
-                        Abrir planejamento supervisionado
-                      </Button>
-                    </div>
-                  )}
-                  {error && !reviewReasons(q).length && (
-                    <div className="form-actions">
-                      <Button type="button" variant="outline" onClick={() => goStep(2)}>
-                        Ajustar disponibilidade
-                      </Button>
-                      <Button type="button" variant="outline" onClick={() => blank(true)}>
-                        Montar ficha manual
-                      </Button>
-                    </div>
-                  )}
-                  <p className="form-help">
-                    Gerar não publica nem garante segurança individual. Toda ficha exige revisão e
-                    aprovação do profissional.
-                  </p>
-                </>
-              )}
-              <div className="form-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={step === 0}
-                  onClick={() => goStep(step - 1)}
-                >
-                  <ArrowLeft size={16} />
-                  Voltar etapa
-                </Button>
-                <Button type="submit">
-                  {step < 5
-                    ? 'Continuar'
-                    : revising
-                      ? 'Salvar ficha atual e gerar nova proposta'
-                      : 'Gerar proposta de treino'}
-                  <ArrowRight size={16} />
-                </Button>
-              </div>
-            </form>
-          </PageMotion>
-        </Panel>
-      )}
-      {view === 'templates' && (
-        <Panel className="module-panel">
-          <h2>Modelos de semana</h2>
-          <p className="form-help">
-            Escolha uma divisão. O Studio ajusta os exercícios após você conferir o aluno, os
-            equipamentos e o tempo disponível.
-          </p>
-          <div className="form-actions">
-            {weeklyModels.map((model) => (
-              <Button
-                key={model.level}
-                variant="outline"
-                onClick={() => {
-                  setRevising(false);
-                  setQ((current) => ({
-                    ...current,
-                    ...model,
-                    frequency: model.days.length,
-                    dayFocus: undefined,
-                  }));
-                  setError('');
-                  setFeedback('');
-                  setView('wizard');
-                  goStep(0);
-                }}
-              >
-                {model.level} · {model.split} · {model.days.length} dias
+            {view !== 'versions' && (
+              <Button variant="outline" onClick={() => leaveEditor(() => setView('versions'))}>
+                Histórico de versões
               </Button>
-            ))}
+            )}
           </div>
-        </Panel>
+        </details>
+      )}
+      {view === 'wizard' && (
+        <>
+          {revising && (
+            <Button variant="outline" onClick={() => setView('editor')}>
+              Voltar à ficha em edição
+            </Button>
+          )}
+          <StudioPlanning
+            q={q}
+            setQ={setQ}
+            catalog={catalog}
+            startingStage={startingStage}
+            selectStudent={(id) => studentQuestionnaire(data, id)}
+            generate={generate}
+            supervised={(answers) => {
+              repository.updateExperience((state) => ({
+                ...state,
+                ages: { ...state.ages, [answers.studentId]: answers.age },
+              }));
+              blank(true, answers);
+            }}
+            error={error}
+            setError={setError}
+            revising={revising}
+          />
+        </>
       )}
       {(view === 'home' || view === 'templates') && (
         <>
@@ -995,16 +509,6 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
                 onlyReview && view === 'home'
                   ? 'Desmarque o filtro para consultar todas as fichas.'
                   : 'Gere uma proposta ou crie uma ficha manual. Os modelos salvos aparecerão nesta área.'
-              }
-              action={
-                <Button
-                  onClick={() => {
-                    setStep(0);
-                    setView('wizard');
-                  }}
-                >
-                  Começar pelo questionário
-                </Button>
               }
             />
           )}
@@ -1138,15 +642,20 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
                   variant="outline"
                   onClick={() => {
                     setRevising(true);
-                    setStep(0);
-                    setQ(structuredClone(draft.questionnaire!));
+                    setStartingStage('essentials');
+                    const answers = structuredClone(draft.questionnaire!);
+                    setQ({ ...answers, modelId: modelFor(answers).id });
                     setView('wizard');
                   }}
                 >
                   Rever respostas
                 </Button>
               )}
-              <Button variant="outline" onClick={() => regenerate(true)}>
+              <Button
+                variant="outline"
+                disabled={!draft.questionnaire}
+                onClick={() => regenerate(true)}
+              >
                 <RefreshCw size={16} />
                 Recriar proposta
               </Button>
@@ -1173,7 +682,17 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
                 variant="outline"
                 disabled={draft.days.length >= 7}
                 onClick={() => {
-                  edit({ ...draft, days: [...draft.days, makeDay()] });
+                  edit({
+                    ...draft,
+                    days: [
+                      ...draft.days,
+                      makeDay(
+                        WEEKDAYS.find(
+                          (weekday) => !draft.days.some((day) => day.weekday === weekday),
+                        ),
+                      ),
+                    ],
+                  });
                   setDayIndex(draft.days.length);
                 }}
               >
@@ -1182,18 +701,21 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
               </Button>
               <details className="studio-advanced">
                 <summary>Volume e cobertura semanal</summary>
-                {Object.entries(volume).map(([muscle, sets]) => (
+                {Object.entries(assessment.volume).map(([muscle, sets]) => (
                   <p key={muscle}>
                     {muscle} · {sets} séries diretas
                   </p>
                 ))}
                 <p>
                   Grupos sem séries diretas:{' '}
-                  {[...new Set(movements.map((e) => muscleFor(e.id)))]
-                    .filter((m) => m !== 'Mobilidade' && !volume[m])
-                    .join(', ') || 'nenhum'}
+                  {TRAINING_GROUPS.filter((m) => m !== 'Mobilidade' && !assessment.volume[m]).join(
+                    ', ',
+                  ) || 'nenhum'}
                   .
                 </p>
+                {[...assessment.errors, ...assessment.warnings].map((message) => (
+                  <p key={message}>{message}</p>
+                ))}
               </details>
             </aside>
             <Panel className="module-panel">
@@ -1219,6 +741,32 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
                     </select>
                   </Field>
                 </div>
+                <details className="studio-advanced">
+                  <summary>Grupos musculares planejados</summary>
+                  <fieldset>
+                    <legend>Grupos de {currentDay.name}</legend>
+                    <div className="choice-grid">
+                      {TRAINING_GROUPS.map((group) => (
+                        <label key={group} className="checkbox-row">
+                          <input
+                            type="checkbox"
+                            checked={currentDay.groups?.includes(group) ?? false}
+                            onChange={(event) => {
+                              const selected = event.target.checked;
+                              editDay((day) => ({
+                                ...day,
+                                groups: selected
+                                  ? [...(day.groups ?? []), group]
+                                  : day.groups?.filter((g) => g !== group),
+                              }));
+                            }}
+                          />
+                          {group}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </details>
                 <details className="studio-advanced" open={!guided}>
                   <summary>Configurar cardio para este dia</summary>
                   <CardioEditor
@@ -1235,7 +783,11 @@ export function StudioPage({ reviewQueue = false }: { reviewQueue?: boolean }) {
                   />
                 </Field>
                 <div className="form-actions">
-                  <Button variant="outline" onClick={() => regenerate()}>
+                  <Button
+                    variant="outline"
+                    disabled={!draft.questionnaire}
+                    onClick={() => regenerate()}
+                  >
                     Gerar novamente este dia
                   </Button>
                   <Button

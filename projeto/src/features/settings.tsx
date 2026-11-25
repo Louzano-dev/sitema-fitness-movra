@@ -1,11 +1,13 @@
 'use client';
 import { useDemoSession } from '@/components/demo-session';
+import { HabitsPanel } from './student/habits';
 import { useState } from 'react';
 import { Controller, useController, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDemo, useRepository } from '@/components/providers';
 import { PERSONAL_FUEL_ID } from '@/services/experience-service';
 import { Avatar, Feedback, Field, PageHeader, Panel } from '@/components/shared';
+import { connectService } from '@/services/connect-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,7 +23,7 @@ import { profileSchema, errorMessage } from '@/domain/schemas';
 import type { Environment, Profile } from '@/domain/types';
 export function SettingsPage({ role }: { role: Environment }) {
   const data = useDemo();
-  const { studentId, leave } = useDemoSession();
+  const { studentId, leave, session } = useDemoSession();
   const repository = useRepository();
   const [success, setSuccess] = useState('');
   const {
@@ -76,29 +78,31 @@ export function SettingsPage({ role }: { role: Environment }) {
               Exibir estimativas numéricas no meu diário
             </label>
           )}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline">Redefinir dados demonstrativos</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Restaurar todos os exemplos?</DialogTitle>
-                <DialogDescription>
-                  Remove fichas, refeições e registros fictícios salvos neste navegador, de todos os
-                  perfis desta demonstração. Esta ação não pode ser desfeita.
-                </DialogDescription>
-              </DialogHeader>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  repository.reset();
-                  leave();
-                }}
-              >
-                Confirmar redefinição dos dados
-              </Button>
-            </DialogContent>
-          </Dialog>
+          {!session?.account && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Redefinir dados demonstrativos</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Restaurar todos os exemplos?</DialogTitle>
+                  <DialogDescription>
+                    Remove fichas, refeições e registros fictícios salvos neste navegador, de todos
+                    os perfis desta demonstração. Esta ação não pode ser desfeita.
+                  </DialogDescription>
+                </DialogHeader>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    repository.reset();
+                    leave();
+                  }}
+                >
+                  Confirmar redefinição dos dados
+                </Button>
+              </DialogContent>
+            </Dialog>
+          )}
         </aside>
         <Panel className="settings-card">
           <h2 className="mb-6">Informações do perfil</h2>
@@ -108,6 +112,8 @@ export function SettingsPage({ role }: { role: Environment }) {
               setSuccess('');
               try {
                 await repository.saveProfile(role, input, studentId);
+                if (session?.account)
+                  await connectService.renameAccount(session.account.id, input.name);
                 reset(input);
                 setSuccess('Perfil atualizado nesta demonstração.');
               } catch (error) {
@@ -167,6 +173,7 @@ export function SettingsPage({ role }: { role: Environment }) {
           </form>
         </Panel>
       </div>
+      {role === 'aluno' && <HabitsPanel settings />}
     </>
   );
 }

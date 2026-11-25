@@ -13,6 +13,7 @@ import type {
   WorkoutInput,
 } from '@/domain/schemas';
 import { appointmentOverlaps, minutes } from '@/domain/selectors';
+import { civilDate } from '@/domain/habits';
 import {
   DEMO_DATE,
   ORGANIZATION_ID,
@@ -36,7 +37,8 @@ export class MockRepository implements MovraRepository {
   private state: DemoState;
   private listeners = new Set<() => void>();
   private storage?: Pick<Storage, 'getItem' | 'setItem'>;
-  constructor(seed: DemoState = createSeed()) {
+  constructor(seed: DemoState = createSeed(), private checkBooking?: (input: AppointmentInput, id?:string) => void,
+    private checkDelivery?: (studentId:string) => void) {
     this.state = structuredClone(seed);
   }
   getSnapshot = () => this.state;
@@ -94,6 +96,7 @@ export class MockRepository implements MovraRepository {
     if (!program || program.status !== 'Aprovado' || !program.approvedVersion)
       throw new Error('Revise e aprove a versão antes de atribuir.');
     this.student(program.studentId);
+    this.checkDelivery?.(program.studentId);
     const snapshot = this.state.experience.versions.find(
       (p) => p.approvedVersion === program.approvedVersion,
     );
@@ -201,37 +204,64 @@ export class MockRepository implements MovraRepository {
   async saveWorkout(input: WorkoutInput, id?: string) {
     const parsed = workoutSchema.parse(input);
     this.student(parsed.studentId);
+    this.checkDelivery?.(parsed.studentId);
     if (parsed.exercises.some((p) => !this.state.exercises.some((e) => e.id === p.exerciseId)))
       throw new Error('Exercício não encontrado.');
     if (id && !this.state.workouts.some((w) => w.id === id && w.organizationId === ORGANIZATION_ID))
       throw new Error('Treino não encontrado.');
+    const prior = this.state.workouts.find(w => w.id === id);
+    // A revised delivery receives its own identity so a learner can still run the original.
+    const snapshot = parsed.studentId.startsWith('s-') || !!prior?.versionId;
+    const workoutId = snapshot ? this.id() : (id ?? this.id());
     const workout = {
       ...parsed,
-      id: id ?? this.id(),
+      id: workoutId,
+      ...(snapshot && {
+        programId: prior && prior.studentId === parsed.studentId && !prior.weekday
+          ? (prior.programId ?? prior.id) : workoutId,
+        versionId: workoutId,
+      }),
       organizationId: ORGANIZATION_ID,
       updatedAt: DEMO_DATE,
     };
     const drafts = { ...this.state.drafts };
     delete drafts[workout.id];
     this.commit({
-      workouts: id
+      workouts: snapshot ? [workout, ...this.state.workouts] : id
         ? this.state.workouts.map((w) => (w.id === id ? workout : w))
         : [...this.state.workouts, workout],
       drafts,
     });
     return workout.id;
   }
-  async saveAppointment(input: AppointmentInput) {
+  async saveAppointment(input: AppointmentInput, id?: string) {
+    if (this.checkBooking && typeof window !== 'undefined' && window.navigator.locks) {
+      return window.navigator.locks.request('movra:connect:agenda', () => this.persistAppointment(input,id));
+    }
+    this.persistAppointment(input,id);
+  }
+  private persistAppointment(input: AppointmentInput, id?: string) {
     const parsed = appointmentSchema.parse(input);
     this.student(parsed.studentId);
+    const original = this.state.appointments.find(a => a.id === id);
+    if (id && (!original || original.status !== 'Agendado' || original.studentId !== parsed.studentId)) throw Error('Agendamento indisponível para alteração.');
+    this.checkBooking?.(parsed,id);
     if (minutes(parsed.time) + parsed.duration > 1440)
       throw new Error('O encontro deve terminar no mesmo dia.');
-    if (this.state.appointments.some((a) => appointmentOverlaps(parsed, a)))
+    if (this.state.appointments.some((a) => a.id !== id && appointmentOverlaps(parsed, a)))
       throw new Error('Este horário conflita com outro agendamento. Escolha outro horário.');
     if (parsed.date < DEMO_DATE) throw new Error('Escolha uma data a partir do dia demonstrativo.');
     this.commit({
-      appointments: [...this.state.appointments, { ...parsed, id: this.id(), status: 'Agendado' }],
+      appointments: original ? this.state.appointments.map(a => a.id === id ? {
+        ...a, ...parsed, confirmed: false, previous: [...(a.previous ?? []), {date:a.date,time:a.time}],
+      } : a) : [...this.state.appointments, { ...parsed, id: this.id(), status: 'Agendado' }],
     });
+  }
+  async confirmAppointment(id: string) {
+    const entry=this.state.appointments.find(a=>a.id===id && a.status==='Agendado');
+    if (!entry) throw Error('Agendamento indisponível.');
+    this.checkBooking?.(entry,id);
+    this.commit({appointments:this.state.appointments.map(a => a.id===id ? {...a,confirmed:true} : a)});
   }
   async cancelAppointment(id: string) {
     if (!this.state.appointments.some((a) => a.id === id))
@@ -315,16 +345,39 @@ export class MockRepository implements MovraRepository {
   saveDraft(workoutId: string, sets: SetLog[]) {
     this.commit({ drafts: { ...this.state.drafts, [workoutId]: structuredClone(sets) } });
   }
-  async finishWorkout(workoutId: string, duration: number, studentId = STUDENT_ID, note = '') {
+  recordIndependentWorkout(studentId: string, input: string, minutes: number, extra: boolean) {
+    this.student(studentId);
+    const title = input.trim();
+    if (title.length < 2 || title.length > 100 || !Number.isInteger(minutes) || minutes < 1 || minutes > 1440)
+      throw Error('Informe o nome da atividade e uma duração entre 1 e 1440 minutos.');
+    const instant = new Date();
+    const date = civilDate(instant, this.state.experience.habits?.[studentId]?.zone);
+    const existing = this.state.sessions.find((s) => s.studentId === studentId && s.date === date &&
+      s.workoutId === 'independente' && s.title.toLocaleLowerCase('pt-BR') === title.toLocaleLowerCase('pt-BR') && s.extra === extra);
+    if (existing) return existing.id;
+    const id = `avulso/${date}/${extra}/${studentId.length}/${studentId}/${title.toLocaleLowerCase('pt-BR')}`;
+    this.commit({ sessions: [{ id, studentId, workoutId: 'independente', title, date, duration: minutes,
+      completedAt: instant.toISOString(), source: 'manual', extra, sets: [], exerciseNames: {} }, ...this.state.sessions] });
+    return id;
+  }
+  async finishWorkout(workoutId: string, duration: number, studentId = STUDENT_ID, note = '', confirmation?: 'recorded' | 'manual') {
     const workout = this.state.workouts.find(
       (w) => w.id === workoutId && w.studentId === studentId,
     );
     if (!workout) throw new Error('Treino não disponível para o aluno demonstrativo.');
+    const instant = new Date();
+    const date = civilDate(instant, this.state.experience.habits?.[studentId]?.zone);
+    if (confirmation) {
+      const existing = this.state.sessions.find((s) => s.completedAt && s.studentId === studentId && s.workoutId === workoutId && s.date === date);
+      if (existing) return existing.id;
+    }
     const sets = this.state.drafts[workoutId] ?? [];
+    const manual = confirmation === 'manual';
+    if (manual && sets.some((s) => s.done)) throw Error('Conclua as séries registradas antes de finalizar.');
     const expected = workout.exercises.flatMap((p) =>
       Array.from({ length: p.sets }, (_, i) => `${p.exerciseId}:${i + 1}`),
     );
-    if (
+    if (!manual && (
       sets.length !== expected.length ||
       new Set(sets.map((s) => `${s.exerciseId}:${s.set}`)).size !== expected.length ||
       sets.some(
@@ -336,20 +389,24 @@ export class MockRepository implements MovraRepository {
           !Number.isInteger(s.reps) ||
           s.reps < 1,
       )
-    )
+    ))
       throw new Error('Registre carga, repetições e conclusão de todas as séries.');
     if (!Number.isFinite(duration) || duration < 0) throw new Error('Duração inválida.');
-    const id = this.id();
+    const id = `ficha/${date}/${studentId.length}/${studentId}/${workoutId}`;
+    if (this.state.sessions.some((s) => s.id === id)) throw Error('Esta ficha já tem registro de conclusão para hoje.');
     const session = {
       id,
       studentId,
       versionId: workout.versionId,
+      programId: workout.programId,
+      completedAt: instant.toISOString(),
+      source: manual ? 'manual' as const : 'series' as const,
       note: note.slice(0, 500),
       workoutId,
       title: workout.title,
-      date: DEMO_DATE,
-      duration: Math.max(1, Math.round(duration)),
-      sets: structuredClone(sets),
+      date,
+      duration: Math.round(duration),
+      sets: manual ? [] : structuredClone(sets),
       exerciseNames: Object.fromEntries(this.state.exercises.map((e) => [e.id, e.name])),
     };
     const drafts = { ...this.state.drafts };

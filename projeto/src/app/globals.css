@@ -5,6 +5,7 @@
 @import '../components/interaction.css';
 @import '../components/universal.css';
 @import '../features/training.css';
+@import '../features/library.css';
 
 @theme inline {
   --color-background: var(--background);
@@ -30,6 +31,10 @@
   --radius-lg: 12px;
   --radius-xl: 20px;
 }
+.connect-entry { margin-block: .85rem; border-top: 1px solid currentColor; padding-top: .75rem; }
+.connect-entry summary { cursor: pointer; padding-block: .4rem; font-weight: 600; }
+.connect-entry p { margin-block: .65rem; }
+.connect-entry button { margin-block: .3rem; }
 :root {
   --background: var(--movra-color-canvas);
   --foreground: var(--movra-color-text);

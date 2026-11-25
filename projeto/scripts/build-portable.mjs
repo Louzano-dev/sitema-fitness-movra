@@ -37,6 +37,24 @@ const result = await build({
     {
       name: 'movra-portable',
       setup(builder) {
+        builder.onLoad({ filter: /companion-media\.ts$/ }, async () => {
+          const directory = resolve('public/media/companion');
+          const files = (await fs.readdir(directory)).filter((name) => name.endsWith('.webp'));
+          const images = await Promise.all(
+            files.map(async (name) => [
+              name,
+              'data:image/webp;base64,' +
+                (await fs.readFile(path.join(directory, name))).toString('base64'),
+            ]),
+          );
+          return {
+            contents:
+              'const images = ' +
+              JSON.stringify(Object.fromEntries(images)) +
+              '; export function companionImage(name){ return images[name] }',
+            loader: 'js',
+          };
+        });
         builder.onLoad({ filter: /login-media\.ts$/ }, async () => ({
           contents: `export const LOGIN_VIDEO = ${JSON.stringify(
             await fs

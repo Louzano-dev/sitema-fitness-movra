@@ -35,7 +35,7 @@ async function navigatePage(page: Page, label: string) {
   if ((page.viewportSize()?.width ?? 1280) < 1000) {
     await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
     await page.getByRole('dialog').getByRole('link', { name: label, exact: true }).click();
-  } else await page.getByRole('link', { name: label, exact: true }).click();
+  } else await page.locator('.desktop-sidebar').getByRole('link', { name: label, exact: true }).click();
   await expect(page.locator('main h1')).toBeVisible();
 }
 async function changeRole(page: Page, role: 'personal' | 'aluno') {
@@ -149,7 +149,8 @@ test('retoma as séries e soma apenas o tempo ativo após sair da ficha', async 
   const sessionUrl = page.url();
   await page.clock.setFixedTime(new Date('2026-11-12T12:02:00Z'));
   await page.getByRole('button', { name: 'Pausar sessão', exact: true }).click();
-  await navigatePage(page, 'Histórico');
+  await navigatePage(page, 'Meus treinos');
+    await page.getByRole('button',{name:'Histórico',exact:true}).click();
   await page.clock.setFixedTime(new Date('2026-11-12T15:00:00Z'));
   await page.goBack();
   await expect(page).toHaveURL(sessionUrl);

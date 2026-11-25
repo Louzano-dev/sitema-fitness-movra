@@ -11,7 +11,9 @@ import {
   type Meal,
 } from '@/domain/experience';
 import { FOODS } from '@/domain/foods';
+import { studioCatalog } from '@/domain/exercise-catalog';
 import { reviewReasons } from '@/domain/training-engine';
+import { assessProgram } from '@/domain/training-plan';
 import type { DemoState, Environment } from '@/domain/types';
 export const newId = () => crypto.randomUUID();
 export function saveProgram(repository: MovraRepository, input: Program): Program {
@@ -41,23 +43,14 @@ export function approveProgram(
   const state = repository.getSnapshot();
   const program = state.experience.programs.find((p) => p.id === id);
   if (!program || !reviewed) throw new Error('A revisão explícita do profissional é obrigatória.');
-  if (program.days.some((day) => !day.exercises.length && !day.cardio?.length))
-    throw new Error('Adicione exercícios em todos os dias.');
   if (new Set(program.days.map((day) => day.weekday)).size !== program.days.length)
     throw new Error('Organize os dias da semana sem duplicações antes de aprovar.');
-  if (
-    program.days.some((day) =>
-      day.exercises.some(
-        (row) => !state.exercises.some((e) => e.id === row.exerciseId && !e.id.includes('--')),
-      ),
-    )
-  )
-    throw new Error('Há exercícios sem catálogo.');
+  const { errors } = assessProgram(program.days, program.questionnaire, studioCatalog(state.exercises));
+  if (errors.length) throw new Error(errors.join(' '));
   const age = state.experience.ages[program.studentId];
   if (
     (age === undefined ||
       age < 18 ||
-      age >= 65 ||
       (program.questionnaire && reviewReasons(program.questionnaire).length > 0)) &&
     !program.supervised
   )

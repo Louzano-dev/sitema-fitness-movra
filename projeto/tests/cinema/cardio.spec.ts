@@ -46,8 +46,7 @@ for (const width of [390, 1280])
     await page.goto(entry);
     await page.getByRole('button', { name: 'Entrar na demonstração', exact: true }).click();
     await navigate(page, 'MOVRA Studio');
-    await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-    await page.getByRole('button', { name: 'Criar treino do zero', exact: true }).click();
+    await page.getByRole('button', { name: 'Criar do zero', exact: true }).click();
     await page.getByLabel('Nome da ficha', { exact: true }).fill('Cardio validado');
     await page.getByRole('button', { name: 'Adicionar cardio', exact: true }).click();
     await page.getByLabel('Duração orientativa (min)', { exact: true }).fill('5');
@@ -114,7 +113,8 @@ for (const width of [390, 1280])
     await runner.getByLabel('Esforço percebido (RPE 0–10, opcional)', { exact: true }).fill('4');
     await runner.getByRole('button', { name: 'Salvar registro de cardio', exact: true }).click();
     await expect(runner.locator('.form-success')).toContainText('Cardio registrado');
-    await navigate(page, 'Histórico');
+    await navigate(page, 'Meus treinos');
+    await page.getByRole('button',{name:'Histórico',exact:true}).click();
     const history = page.locator('.cardio-history');
     await expect(history).toContainText('0.5 km');
     await history.locator('details').first().locator('summary').click();
@@ -124,7 +124,8 @@ for (const width of [390, 1280])
     await page.reload();
     await page.getByRole('button', { name: 'Aluno / atleta', exact: true }).click();
     await page.getByRole('button', { name: 'Entrar na demonstração', exact: true }).click();
-    await navigate(page, 'Histórico');
+    await navigate(page, 'Meus treinos');
+    await page.getByRole('button',{name:'Histórico',exact:true}).click();
     await expect(page.locator('.cardio-history')).toContainText('3:20');
     await switchRole(page, 'personal');
     await navigate(page, 'Alunos');
@@ -135,7 +136,8 @@ for (const width of [390, 1280])
     await page.getByRole('button', { name: 'Remover cardio 1', exact: true }).click();
     await page.getByRole('button', { name: 'Salvar rascunho', exact: true }).click();
     await switchRole(page, 'aluno');
-    await navigate(page, 'Histórico');
+    await navigate(page, 'Meus treinos');
+    await page.getByRole('button',{name:'Histórico',exact:true}).click();
     await expect(page.locator('.cardio-history')).toContainText('Caminhada na esteira');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,

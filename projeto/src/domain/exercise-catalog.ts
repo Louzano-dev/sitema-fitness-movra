@@ -1,5 +1,6 @@
 import type { Exercise } from './types';
 import { EXPANDED_EXERCISES, exerciseSlug } from './exercise-expansion';
+import { planningById } from './exercise-planning';
 export interface CatalogExercise extends Exercise {
   secondary: string[];
   pattern: string;
@@ -8,6 +9,9 @@ export interface CatalogExercise extends Exercise {
   alternatives: string[];
   tags: string[];
   category: string;
+  primary?: string;
+  synonyms?: string[];
+  reviewStatus?: string;
 }
 const entries: [string, string, string, string, string, string[]][] = [
   [
@@ -174,6 +178,20 @@ for (const exercise of EXPANDED_EXERCISES) {
       .slice(0, 4)
       .map((e) => e.id),
   });
+}
+
+for (const exercise of EXERCISES) {
+  const metadata = planningById.get(exercise.id);
+  if (!metadata) continue;
+  exercise.primary = metadata.primary;
+  exercise.secondary = metadata.secondary;
+  exercise.synonyms = metadata.synonyms;
+  exercise.reviewStatus = metadata.reviewStatus;
+  exercise.tags = [...new Set([metadata.primary, metadata.family, ...exercise.tags, ...metadata.synonyms])];
+  exercise.alternatives = EXERCISES.filter((other) =>
+    other.id !== exercise.id && planningById.get(other.id)?.slot === metadata.slot
+  ).sort((a,b) => Number(planningById.get(b.id)?.family === metadata.family)
+    - Number(planningById.get(a.id)?.family === metadata.family)).slice(0,4).map((e) => e.id);
 }
 
 export function studioCatalog(exercises: Exercise[]): CatalogExercise[] {

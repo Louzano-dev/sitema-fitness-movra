@@ -1,11 +1,14 @@
 'use client';
 import { useDemoSession } from '@/components/demo-session';
 import { CardioExecution } from '../cardio';
+import { HabitCelebration } from './habits';
+import { completionReward, type CompletionReward } from '@/domain/habits';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowLeft, CircleCheck, Pause, Play, SkipForward } from 'lucide-react';
+import { libraryKey } from '@/domain/student-library';
 import { WorkoutOutline } from '@/components/workout-outline';
 import { useDemo, useRepository } from '@/components/providers';
 import { EmptyState, Feedback, Field, PageHeader, Panel } from '@/components/shared';
@@ -148,10 +151,11 @@ export function WorkoutSessionPage({ id }: { id: string }) {
 function WorkoutExecution({ id, activeStudentId }: { id: string; activeStudentId: string }) {
   const data = useDemo();
   const repository = useRepository();
-  const workout = data.workouts.find((w) => w.id === id && w.studentId === activeStudentId);
+  const workout = data.workouts.find((w) => w.id === id && w.studentId === activeStudentId && data.experience.libraries?.[activeStudentId]?.entries[libraryKey(w)] !== 'removed');
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState(false);
+  const [offerManual, setOfferManual] = useState(false);
   const [priorCardio] = useState(
     () =>
       new Set(
@@ -162,6 +166,7 @@ function WorkoutExecution({ id, activeStudentId }: { id: string; activeStudentId
       ),
   );
   const [sessionId, setSessionId] = useState<string>();
+  const [reward, setReward] = useState<CompletionReward | null>(null);
   const [paused, setPaused] = useState(false);
   const elapsed = useRef(data.workoutCheckpoints?.[id]?.elapsedMs ?? 0);
   const finished = useRef(false);
@@ -269,6 +274,8 @@ function WorkoutExecution({ id, activeStudentId }: { id: string; activeStudentId
               {result.title} · {result.sets.length} séries · {result.duration} min. Os valores estão
               no histórico e no acompanhamento do personal durante esta sessão de demonstração.
             </p>
+            {result.source === 'manual' && <p>Conclusão declarada por você, sem séries registradas.</p>}
+            {reward && <HabitCelebration key={reward.id} reward={reward} />}
             <div className="form-actions">
               <Button asChild>
                 <Link href="/aluno/historico">Revisar histórico</Link>
@@ -321,6 +328,26 @@ function WorkoutExecution({ id, activeStudentId }: { id: string; activeStudentId
         </Panel>
       </>
     );
+  async function finish(manual: boolean) {
+    if (finished.current || busy || paused) return;
+    if (!manual && !completed) {
+      setOfferManual(true);
+      setError('Você ainda não marcou séries. Registre as séries executadas ou confirme a conclusão manual.');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const before = repository.getSnapshot();
+      const resultId = await repository.finishWorkout(id,
+        (elapsed.current + Math.max(0, Date.now() - (start.current ?? Date.now()))) / 60000,
+        activeStudentId, '', manual ? 'manual' : 'recorded');
+      finished.current = true;
+      setReward(completionReward(before, repository.getSnapshot(), activeStudentId, resultId));
+      setSessionId(resultId);
+    } catch (e) { setError(errorMessage(e)); }
+    finally { setBusy(false); }
+  }
   return (
     <>
       <Link href="/aluno/treinos" className="text-link">
@@ -601,28 +628,13 @@ function WorkoutExecution({ id, activeStudentId }: { id: string; activeStudentId
           <Feedback error={error} success={feedback} />
           <Button
             disabled={busy || paused}
-            onClick={async () => {
-              setBusy(true);
-              setError('');
-              try {
-                if (!data.drafts[id]) repository.saveDraft(id, sets);
-                const resultId = await repository.finishWorkout(
-                  id,
-                  (elapsed.current + Math.max(0, Date.now() - (start.current ?? Date.now()))) /
-                    60000,
-                  activeStudentId,
-                );
-                finished.current = true;
-                setSessionId(resultId);
-              } catch (e) {
-                setError(errorMessage(e));
-              } finally {
-                setBusy(false);
-              }
-            }}
+            onClick={() => finish(false)}
           >
             {busy ? 'Registrando…' : 'Concluir treino'}
           </Button>
+          {offerManual && !completed && <Button variant="outline" disabled={busy || paused} onClick={() => finish(true)}>
+            Confirmar que concluí sem registrar séries
+          </Button>}
           <p className="form-help mt-4">
             Séries válidas são salvas localmente quando o navegador permite. Recarregar encerra a
             visualização, mas mantém o rascunho salvo.

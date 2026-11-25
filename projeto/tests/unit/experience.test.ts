@@ -67,7 +67,9 @@ function memoryStorage() {
 describe('Studio · regras e versões', () => {
   it('gera adulto iniciante de forma determinística e sem inferir carga', () => {
     const first = proposal();
-    expect(first).toEqual(proposal());
+    const second = proposal();
+    expect(first.days).toEqual(second.days);
+    expect(first.id).not.toBe(second.id);
     expect(first.ruleVersion).toBe(RULE_VERSION);
     expect(first.days).toHaveLength(3);
     expect(
@@ -82,6 +84,7 @@ describe('Studio · regras e versões', () => {
         .sets,
     ).toBe(3);
     expect(proposal({ ...q, age: 50 }).days[0].exercises[0].sets).toBe(2);
+    expect(proposal({ ...q, age: 70 }).days).toEqual(proposal(q).days);
   });
   it('organiza frequência e dias na ordem semanal', () => {
     const result = proposal({ ...q, frequency: 2, days: ['Sexta', 'Segunda'] });
@@ -94,20 +97,19 @@ describe('Studio · regras e versões', () => {
   it('respeita equipamentos, exercícios excluídos e padrões evitados', () => {
     const result = proposal({
       ...q,
-      equipment: ['Peso corporal'],
+      equipment: ['Peso corporal', 'Elásticos'],
       excluded: ['abdominal'],
-      avoidPatterns: ['Agachar'],
+      avoidPatterns: ['Elevar'],
     });
     for (const row of result.days.flatMap((day) => day.exercises)) {
       const exercise = EXERCISES.find((e) => e.id === row.exerciseId)!;
-      expect(exercise.requires).toEqual(['Peso corporal']);
+      expect(exercise.requires.every((r) => ['Peso corporal', 'Elásticos'].includes(r))).toBe(true);
       expect(row.exerciseId).not.toBe('abdominal');
-      expect(exercise.pattern).not.toBe('Agachar');
+      expect(exercise.pattern).not.toBe('Elevar');
     }
   });
   it.each([
     { age: 16 },
-    { age: 70 },
     { specialContext: true },
     { notes: 'Dor relevante no movimento' },
     { notes: 'Gravidez' },
@@ -125,7 +127,9 @@ describe('Studio · regras e versões', () => {
     const changed = generateProgram(q, 1);
     expect(changed.kind).toBe('proposal');
     expect(current.days[0].exercises[0].sets).toBe(5);
-    expect(generateProgram(q, 1)).toEqual(changed);
+    const again = generateProgram(q,1);
+    if (changed.kind !== 'proposal' || again.kind !== 'proposal') throw Error('Proposta esperada');
+    expect(again.program.days).toEqual(changed.program.days);
   });
   it('impede atribuição sem revisão explícita e mantém versões imutáveis', async () => {
     const repository = new MockRepository();
@@ -143,7 +147,7 @@ describe('Studio · regras e versões', () => {
     expect(repository.getSnapshot().experience.versions).toEqual(before);
     await expect(repository.assignProgram(draft.id)).rejects.toThrow();
   });
-  it.each([16, 70, undefined])('ficha manual exige supervisão para idade %s', (age) => {
+  it.each([16, undefined])('ficha manual exige supervisão para idade %s', (age) => {
     const repository = new MockRepository();
     repository.updateExperience((state) => {
       const ages = { ...state.ages };
@@ -155,6 +159,37 @@ describe('Studio · regras e versões', () => {
     expect(() => approveProgram(repository, manual.id, true)).toThrow('supervisionado');
     const supervised = saveProgram(repository, { ...manual, supervised: true });
     expect(approveProgram(repository, supervised.id, true).status).toBe('Aprovado');
+  });
+  it.each([false, true])('bloqueia conflitos na aprovação com supervisão %s', (supervised) => {
+    const repository = new MockRepository();
+    const program = proposal();
+    const row = program.days[0].exercises[0];
+    program.questionnaire!.excluded = [row.exerciseId];
+    row.sets = 10;
+    row.rest = 600;
+    const draft = saveProgram(repository, { ...program, supervised });
+    expect(() => approveProgram(repository, draft.id, true)).toThrow(/exclusões.*duração/);
+    expect(repository.getSnapshot().experience.versions).toHaveLength(0);
+    expect(repository.getSnapshot().experience.programs.find((p) => p.id === draft.id)?.status).toBe('Rascunho');
+  });
+  it('valida exercícios próprios e itens ausentes também em fichas manuais', () => {
+    const repository = new MockRepository();
+    const program = proposal();
+    const ownId = repository.saveOwnExercise({
+      ...EXERCISES[0], name: 'Agachamento adaptado', equipment: 'Máquinas',
+    });
+    const day = program.days[0];
+    const row = { ...day.exercises[0], exerciseId: ownId };
+    const draft = saveProgram(repository, {
+      ...program, days: [{ ...day, exercises: [row] }], supervised: true,
+    });
+    expect(() => approveProgram(repository, draft.id, true)).toThrow(/equipamentos/);
+    const manual = saveProgram(repository, { ...draft, questionnaire: undefined });
+    expect(approveProgram(repository, manual.id, true).status).toBe('Aprovado');
+    const unknown = saveProgram(repository, {
+      ...manual, days: [{ ...day, exercises: [{ ...row, exerciseId: 'own-ausente' }] }],
+    });
+    expect(() => approveProgram(repository, unknown.id, true)).toThrow(/ausente na biblioteca/);
   });
   it('executa exercício duplicado sem colisão e preserva sessão após nova versão', async () => {
     const repository = new MockRepository();

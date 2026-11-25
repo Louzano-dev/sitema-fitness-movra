@@ -1,3 +1,4 @@
+import { deliverySchema } from '@/domain/student-library';
 import { z } from 'zod';
 import { cardioSchema } from '@/domain/cardio';
 import { experienceSchema } from '@/domain/experience';
@@ -51,13 +52,14 @@ export const storedStateSchema = z
         updatedAt: z.iso.date(),
         programId: id.optional(),
         versionId: id.optional(),
+        delivery: deliverySchema.optional(),
         weekday: z.string().optional(),
         cardio: z.array(cardioSchema).optional(),
       }),
     ),
     sessions: z.array(
       z.object({
-        id,
+        id: z.string().min(1).max(500),
         studentId: id,
         workoutId: id,
         title: z.string(),
@@ -65,13 +67,17 @@ export const storedStateSchema = z
         duration: z.number().nonnegative(),
         sets: z.array(set),
         exerciseNames: z.record(z.string(), z.string()),
+        completedAt: z.iso.datetime().optional(),
+        source: z.enum(['series', 'manual']).optional(),
+        extra: z.boolean().optional(),
+        programId: id.optional(),
         versionId: id.optional(),
         note: z.string().optional(),
       }),
     ),
     measurements: z.array(measurementSchema.extend({ id })),
     appointments: z.array(
-      appointmentSchema.extend({ id, status: z.enum(['Agendado', 'Cancelado']) }),
+      appointmentSchema.extend({ id, status: z.enum(['Agendado', 'Cancelado']), trainerId: id.optional(), confirmed: z.boolean().optional(), previous: z.array(z.object({date:z.iso.date(), time:z.string()})).optional() }),
     ),
     plans: z.array(planSchema.extend({ id })),
     organizations: z.array(

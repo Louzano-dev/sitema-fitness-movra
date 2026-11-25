@@ -32,6 +32,7 @@ export interface Prescription {
   rest: number;
 }
 export interface Workout {
+  delivery?: import('zod').infer<typeof import('./student-library').deliverySchema>;
   cardio?: import('./cardio').Cardio[];
   programId?: string;
   versionId?: string;
@@ -52,6 +53,10 @@ export interface SetLog {
   done: boolean;
 }
 export interface WorkoutSession {
+  completedAt?: string;
+  source?: 'series' | 'manual';
+  extra?: boolean;
+  programId?: string;
   versionId?: string;
   note?: string;
   id: string;
@@ -71,6 +76,9 @@ export interface Measurement {
   waist: number;
 }
 export interface Appointment {
+  trainerId?: string;
+  confirmed?: boolean;
+  previous?: { date: string; time: string }[];
   id: string;
   studentId: string;
   date: string;

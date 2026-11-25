@@ -1,5 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
+import { useDemoSession } from '@/components/demo-session';
+import { marketplaceService, linkAllows } from '@/services/marketplace-service';
+import { connectService } from '@/services/connect-service';
 import { CalendarDays, Plus, Video } from 'lucide-react';
 import { useDemo, useRepository } from '@/components/providers';
 import {
@@ -23,7 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { DEMO_DATE, type Appointment } from '@/domain/types';
 import { errorMessage } from '@/domain/schemas';
-import { formatDate } from '@/domain/selectors';
+import { formatDate, minutes } from '@/domain/selectors';
 function CancelAppointment({
   appointment,
   onCancelled,
@@ -81,7 +84,15 @@ function CancelAppointment({
 export function AgendaPage() {
   const data = useDemo();
   const repository = useRepository();
+  const { session } = useDemoSession();
+  const account = session?.account;
+  useSyncExternalStore(marketplaceService.subscribe, marketplaceService.revision, () => 0);
+  useSyncExternalStore(connectService.subscribe, connectService.revision, () => 0);
+  const students = data.students.filter(
+    (s) => !account || !s.id.startsWith('s-') || linkAllows(account.id, s.id, 'appointments'),
+  );
   const [date, setDate] = useState(DEMO_DATE);
+  const [editing, setEditing] = useState<Appointment>();
   const [showCanceled, setShowCanceled] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
@@ -106,18 +117,19 @@ export function AgendaPage() {
             open={open}
             onOpenChange={(v) => {
               setOpen(v);
+              if (!v) setEditing(undefined);
               setError('');
             }}
           >
             <DialogTrigger asChild>
-              <Button>
+              <Button disabled={!students.length}>
                 <Plus size={16} />
                 Agendar encontro
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Um próximo encontro.</DialogTitle>
+                <DialogTitle>{editing ? 'Reagendar encontro' : 'Um próximo encontro.'}</DialogTitle>
                 <DialogDescription>
                   Crie um agendamento fictício. Conflitos de horário são verificados nesta agenda.
                 </DialogDescription>
@@ -131,16 +143,22 @@ export function AgendaPage() {
                   setError('');
                   try {
                     const nextDate = String(values.get('date'));
-                    await repository.saveAppointment({
-                      studentId: String(values.get('studentId')),
-                      date: nextDate,
-                      time: String(values.get('time')),
-                      duration: Number(values.get('duration')),
-                      kind: values.get('kind') as 'Presencial' | 'Online',
-                    });
+                    await repository.saveAppointment(
+                      {
+                        studentId: editing?.studentId ?? String(values.get('studentId')),
+                        date: nextDate,
+                        time: String(values.get('time')),
+                        duration: Number(values.get('duration')),
+                        kind: values.get('kind') as 'Presencial' | 'Online',
+                      },
+                      editing?.id,
+                    );
                     setDate(nextDate);
                     setOpen(false);
-                    setSuccess('Encontro adicionado nesta demonstração.');
+                    setSuccess(
+                      editing ? 'Encontro reagendado.' : 'Encontro adicionado nesta demonstração.',
+                    );
+                    setEditing(undefined);
                   } catch (err) {
                     setError(errorMessage(err));
                   } finally {
@@ -153,10 +171,12 @@ export function AgendaPage() {
                     className="native-select"
                     id="appointment-student"
                     name="studentId"
+                    defaultValue={editing?.studentId}
+                    disabled={!!editing}
                     required
                   >
                     <option value="">Selecione o aluno</option>
-                    {data.students.map((s) => (
+                    {students.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
                       </option>
@@ -170,12 +190,18 @@ export function AgendaPage() {
                       type="date"
                       name="date"
                       min={DEMO_DATE}
-                      defaultValue={date}
+                      defaultValue={editing?.date ?? date}
                       required
                     />
                   </Field>
                   <Field label="Horário" htmlFor="appointment-time">
-                    <Input id="appointment-time" type="time" name="time" required />
+                    <Input
+                      id="appointment-time"
+                      type="time"
+                      name="time"
+                      defaultValue={editing?.time}
+                      required
+                    />
                   </Field>
                   <Field label="Duração (min)" htmlFor="appointment-duration">
                     <Input
@@ -184,12 +210,17 @@ export function AgendaPage() {
                       name="duration"
                       min={15}
                       max={180}
-                      defaultValue={60}
+                      defaultValue={editing?.duration ?? 60}
                       required
                     />
                   </Field>
                   <Field label="Formato" htmlFor="appointment-kind">
-                    <select className="native-select" id="appointment-kind" name="kind">
+                    <select
+                      className="native-select"
+                      id="appointment-kind"
+                      name="kind"
+                      defaultValue={editing?.kind}
+                    >
                       <option>Presencial</option>
                       <option>Online</option>
                     </select>
@@ -197,7 +228,7 @@ export function AgendaPage() {
                 </div>
                 <Feedback error={error} />
                 <Button type="submit" disabled={busy}>
-                  {busy ? 'Agendando…' : 'Agendar na prévia'}
+                  {busy ? 'Salvando…' : editing ? 'Salvar novo horário' : 'Agendar na prévia'}
                 </Button>
               </form>
             </DialogContent>
@@ -205,6 +236,10 @@ export function AgendaPage() {
         }
       />
       <Feedback success={success} />
+      {!open && <Feedback error={error} />}
+      {account?.role === 'personal' && (
+        <Availability trainerId={account.id} date={date} appointments={data.appointments} />
+      )}
       <Panel>
         <div className="toolbar">
           <Field label="Dia da agenda" htmlFor="agenda-date">
@@ -257,19 +292,62 @@ export function AgendaPage() {
                       ) : (
                         <CalendarDays size={13} aria-hidden />
                       )}
-                      {a.kind} · {a.duration} min · <Status value={a.status} />
+                      {a.kind} · {a.duration} min ·{' '}
+                      <Status
+                        value={a.confirmed && a.status === 'Agendado' ? 'Confirmado' : a.status}
+                      />
                     </p>
+                    {!!a.previous?.length && (
+                      <small>
+                        Horários anteriores:{' '}
+                        {a.previous.map((p) => formatDate(p.date) + ' ' + p.time).join(', ')}
+                      </small>
+                    )}
                   </div>
                 </div>
                 {a.status === 'Agendado' && (
-                  <CancelAppointment
-                    appointment={a}
-                    onCancelled={() =>
-                      setSuccess(
-                        'Encontro cancelado nesta demonstração. O horário está livre novamente.',
-                      )
-                    }
-                  />
+                  <div className="flex flex-wrap gap-1">
+                    {students.some((s) => s.id === a.studentId) && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditing(a);
+                            setError('');
+                            setOpen(true);
+                          }}
+                        >
+                          Reagendar
+                        </Button>
+                        {!a.confirmed && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await repository.confirmAppointment(a.id);
+                                setError('');
+                                setSuccess('Encontro confirmado.');
+                              } catch (e) {
+                                setError(errorMessage(e));
+                              }
+                            }}
+                          >
+                            Confirmar encontro
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    <CancelAppointment
+                      appointment={a}
+                      onCancelled={() =>
+                        setSuccess(
+                          'Encontro cancelado nesta demonstração. O horário está livre novamente.',
+                        )
+                      }
+                    />
+                  </div>
                 )}
               </div>
             );
@@ -282,5 +360,98 @@ export function AgendaPage() {
         )}
       </Panel>
     </>
+  );
+}
+
+function Availability({
+  trainerId,
+  date,
+  appointments,
+}: {
+  trainerId: string;
+  date: string;
+  appointments: Appointment[];
+}) {
+  const [error, setError] = useState(''),
+    [success, setSuccess] = useState('');
+  const rows = marketplaceService.business(trainerId).slots.filter((s) => s.date === date);
+  return (
+    <Panel>
+      <details>
+        <summary className="cursor-pointer py-2">
+          Disponibilidade e bloqueios · {formatDate(date)}
+        </summary>
+        <form
+          className="form-stack"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget),
+              start = String(f.get('start')),
+              end = String(f.get('end')),
+              kind = f.get('kind') as 'Disponível' | 'Bloqueado';
+            try {
+              setError('');
+              setSuccess('');
+              if (
+                kind === 'Bloqueado' &&
+                appointments.some(
+                  (a) =>
+                    a.date === date &&
+                    a.status === 'Agendado' &&
+                    a.time < end &&
+                    minutes(a.time) + a.duration > minutes(start),
+                )
+              )
+                throw Error(
+                  'Reagende ou cancele o encontro existente antes de bloquear este horário.',
+                );
+              await marketplaceService.setSlot(trainerId, { date, start, end, kind });
+              setSuccess('Faixa de horário salva.');
+            } catch (err) {
+              setError(errorMessage(err));
+            }
+          }}
+        >
+          <div className="form-grid">
+            <Field label="Tipo de faixa" htmlFor="availability-kind">
+              <select id="availability-kind" className="native-select" name="kind">
+                <option>Disponível</option>
+                <option>Bloqueado</option>
+              </select>
+            </Field>
+            <Field label="Início" htmlFor="availability-start">
+              <Input id="availability-start" type="time" name="start" required />
+            </Field>
+            <Field label="Fim" htmlFor="availability-end">
+              <Input id="availability-end" type="time" name="end" required />
+            </Field>
+          </div>
+          <Button>Salvar faixa</Button>
+        </form>
+        {rows.map((r) => (
+          <div className="flex items-center gap-3" key={r.id}>
+            <span>
+              {r.start}–{r.end} · {r.kind}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await marketplaceService.removeSlot(trainerId, r.id);
+                  setError('');
+                  setSuccess('Faixa removida.');
+                } catch (e) {
+                  setError(errorMessage(e));
+                }
+              }}
+            >
+              Remover faixa
+            </Button>
+          </div>
+        ))}
+        <Feedback error={error} success={success} />
+      </details>
+    </Panel>
   );
 }

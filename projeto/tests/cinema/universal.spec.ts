@@ -12,10 +12,12 @@ test('Páginas principais permitem navegar com 320 CSS px', async ({ page }) => 
   for (const student of [false, true]) {
     await enter(page, student);
     const labels = student
-      ? ['Hoje', 'Meus treinos', 'Histórico', 'Evolução', 'Alimentação', 'Agenda', 'Meu perfil']
+      ? ['Hoje', 'Meus treinos', 'Conversas', 'Meu personal', 'Encontrar personal', 'Evolução', 'Alimentação', 'Agenda', 'Meu perfil']
       : [
           'Visão geral',
           'Alunos',
+          'Conversas',
+          'Meu negócio',
           'Treinos',
           'MOVRA Studio',
           'Exercícios',
@@ -81,8 +83,7 @@ test('Modo guiado acompanha cadastro, edição, correção e retorno por teclado
   await page.getByLabel('Objetivo do acompanhamento').fill('Aprender os movimentos');
   await page.getByRole('button', { name: 'Adicionar aluno na prévia' }).click();
   await navigate(page, 'MOVRA Studio');
-  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-  await page.getByRole('button', { name: 'Criar treino do zero', exact: true }).click();
+  await page.getByRole('button', { name: 'Criar do zero', exact: true }).click();
   await page.getByLabel('Atribuir ao aluno').selectOption({ label: 'Pessoa Guia' });
   await page.getByLabel('Nome da ficha').fill('Treino guiado');
   await page.getByRole('button', { name: 'Adicionar exercícios', exact: true }).click();
@@ -110,16 +111,15 @@ test('Modo guiado acompanha cadastro, edição, correção e retorno por teclado
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.guide-hint')).toHaveCount(0);
   await navigate(page, 'MOVRA Studio');
-  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-  await page.getByRole('button', { name: 'Gerar treino personalizado' }).click();
-  await page.getByRole('button', { name: 'Etapa 3: Dias' }).click();
-  await page.getByLabel('Dias por semana').selectOption('2');
-  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
+  await page.getByRole('button', { name: 'Gerar para mim' }).click();
+  for (const weekday of ['Segunda', 'Quarta', 'Sexta'])
+    await page.getByLabel(weekday, { exact: true }).uncheck();
+  await page.getByRole('button', { name: 'Ver prévia da semana', exact: true }).click();
   await expect(page.locator('#studio-days')).toBeFocused();
-  await expect(page.locator('#studio-days-error')).toContainText('Selecione 2 dias');
-  await page.getByLabel('Sexta', { exact: true }).uncheck();
-  await page.getByRole('button', { name: 'Continuar', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Equipamentos', exact: true })).toBeFocused();
+  await expect(page.locator('#studio-days-error')).toContainText('Selecione pelo menos um dia');
+  await page.getByLabel('Sexta', { exact: true }).check();
+  await page.getByRole('button', { name: 'Ver prévia da semana', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Prévia da semana', exact: true })).toBeFocused();
 });
 test('Fuel registra dois itens na mesma refeição e respeita a preferência do adulto', async ({
   page,
@@ -154,8 +154,7 @@ test('Reflow, teclado e registro com texto ampliado', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 850 });
   await navigate(page, 'MOVRA Studio');
   await checkWidth(page);
-  await page.getByRole('button', { name: 'Criar treino', exact: true }).click();
-  await page.getByRole('button', { name: 'Gerar treino personalizado' }).click();
+  await page.getByRole('button', { name: 'Gerar para mim' }).click();
   await checkWidth(page);
   await enter(page, true);
   await page.getByRole('link', { name: 'Começar meu treino' }).click();

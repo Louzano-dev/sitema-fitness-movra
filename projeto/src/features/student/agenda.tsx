@@ -1,6 +1,7 @@
 'use client';
 import { useDemo } from '@/components/providers';
 import { useDemoSession } from '@/components/demo-session';
+import { connectService } from '@/services/connect-service';
 import { EmptyState, PageHeader, Panel, Status } from '@/components/shared';
 import { formatDate } from '@/domain/selectors';
 export function StudentAgenda() {
@@ -27,9 +28,17 @@ export function StudentAgenda() {
                 <strong>
                   {a.kind} · {a.duration} min
                 </strong>
-                <p>Com {data.profiles.personal.name}</p>
+                <p>
+                  Com{' '}
+                  {a.trainerId
+                    ? (connectService.getAccount(a.trainerId)?.name ?? 'Personal da sessão')
+                    : data.profiles.personal.name}
+                </p>
+                {!!a.previous?.length && (
+                  <small>Reagendado · {a.previous.length} alteração(ões)</small>
+                )}
               </div>
-              <Status value={a.status} />
+              <Status value={a.status === 'Agendado' && a.confirmed ? 'Confirmado' : a.status} />
             </div>
           ))
         ) : (

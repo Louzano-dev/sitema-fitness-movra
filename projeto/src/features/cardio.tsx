@@ -27,7 +27,8 @@ import {
 } from '@/domain/cardio';
 import type { Questionnaire } from '@/domain/experience';
 import type { Workout } from '@/domain/types';
-import { DEMO_DATE } from '@/domain/types';
+import { civilDate, completionReward, type CompletionReward } from '@/domain/habits';
+import { HabitCelebration } from './student/habits';
 import { saveCardioRecord } from '@/services/cardio-service';
 import { errorMessage } from '@/domain/schemas';
 const uid = () => crypto.randomUUID();
@@ -659,6 +660,7 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
   const data = useDemo(),
     repository = useRepository(),
     { studentId } = useDemoSession();
+  const [reward, setReward] = useState<CompletionReward | null>(null);
   const [running, setRunning] = useState(false),
     [elapsed, setElapsed] = useState(0),
     [stage, setStage] = useState(0),
@@ -820,6 +822,7 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
         onSubmit={(e) => {
           e.preventDefault();
           try {
+            const before = repository.getSnapshot();
             saveCardioRecord(
               repository,
               {
@@ -828,7 +831,7 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
                 workoutId: workout.id,
                 versionId: workout.versionId ?? '',
                 prescription: structuredClone(cardio),
-                date: DEMO_DATE,
+                date: civilDate(),
                 seconds: Number(seconds),
                 distance: distance ? Number(distance) : undefined,
                 rpe: rpe ? Number(rpe) : undefined,
@@ -836,6 +839,8 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
               },
               studentId,
             );
+            if (!workout.exercises.length)
+              setReward(completionReward(before, repository.getSnapshot(), studentId, recordId.current));
             pause();
             setSuccess(
               'Cardio registrado. Consulte o histórico ou corrija os campos e salve novamente.',
@@ -897,6 +902,7 @@ function CardioRunner({ cardio, workout }: { cardio: Cardio; workout: Workout })
         <Feedback error={error} success={success} />
         <Button type="submit">Salvar registro de cardio</Button>
       </form>
+      {reward && <HabitCelebration key={reward.id} reward={reward} />}
     </Panel>
   );
 }

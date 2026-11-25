@@ -1,9 +1,21 @@
 'use client';
+import { LOGIN_POSTER } from '../login-media';
+import './home.css';
 import { useDemoSession } from '@/components/demo-session';
-import { ArrowRight, CalendarDays, ClipboardList, Clock3, Sparkles } from 'lucide-react';
+import {
+  ArrowRight,
+  CalendarDays,
+  ClipboardList,
+  Clock3,
+  MessageCircle,
+  Dumbbell,
+  Layers,
+  UserRound,
+} from 'lucide-react';
 import Link from 'next/link';
 import { trainingWeek } from '@/domain/training-week';
-import { Brand } from '@/components/brand';
+import { connectService } from '@/services/connect-service';
+import { featuredWorkouts } from '@/domain/student-library';
 import { useDemo } from '@/components/providers';
 import { EmptyState, PageHeader, Panel, TextLink } from '@/components/shared';
 import { Button } from '@/components/ui/button';
@@ -11,56 +23,102 @@ import { DEMO_DATE } from '@/domain/types';
 import { formatDate, studentSessions } from '@/domain/selectors';
 import { WorkoutCards } from '@/features/personal/workouts';
 import { FuelOverview } from '@/features/fuel';
+import { HabitsPanel } from './habits';
+import { civilDate } from '@/domain/habits';
 export function StudentHome() {
-  const { studentId: activeStudentId } = useDemoSession();
+  const { studentId: activeStudentId, session } = useDemoSession();
   const data = useDemo();
   const sessions = studentSessions(data, activeStudentId);
-  const workouts = data.workouts.filter((w) => w.studentId === activeStudentId);
+  const workouts = featuredWorkouts(
+    data.workouts,
+    activeStudentId,
+    data.experience.libraries?.[activeStudentId],
+  );
+  const date = civilDate(new Date(), data.experience.habits?.[activeStudentId]?.zone);
   const today = data.appointments
     .filter(
-      (a) => a.studentId === activeStudentId && a.date >= DEMO_DATE && a.status === 'Agendado',
+      (a) =>
+        a.studentId === activeStudentId &&
+        a.date >= (session?.account ? date : DEMO_DATE) &&
+        a.status === 'Agendado',
     )
     .sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
-  const { next: workout, weekday } = trainingWeek(workouts, sessions, DEMO_DATE);
+  const { next: workout, weekday } = trainingWeek(workouts, sessions, date);
   return (
     <>
       <PageHeader
-        eyebrow="Quinta-feira · 12 de novembro"
+        eyebrow={formatDate(date, { weekday: 'long', day: 'numeric', month: 'long' })}
         title={`Olá, ${data.profiles.aluno.name.split(' ')[0]}.`}
-        description="Seu próximo passo pode começar por aqui."
       />
-      <section className="student-welcome">
-        <div>
-          <p className="eyebrow">
-            {workout?.weekday && workout.weekday !== weekday
-              ? 'Próximo dia programado · ' + workout.weekday
-              : 'Seu treino do dia'}
-          </p>
-          <h2>{workout?.title ?? 'Um novo treino está por vir.'}</h2>
-          <p>
-            {workout
-              ? `${workout.exercises.length} exercícios · ${workout.exercises.reduce((sum, e) => sum + e.sets, 0)} séries · no seu ritmo.`
-              : 'Quando seu personal preparar um treino, ele aparecerá aqui.'}
-          </p>
-          {workout && (
-            <Button asChild className="start-button">
-              <Link href={`/aluno/treinos/${workout.id}`}>
-                Começar meu treino
-                <ArrowRight size={17} />
-              </Link>
-            </Button>
-          )}
+
+      <div className="athlete-today">
+        <div className="athlete-priority">
+          <section className="athlete-session" aria-labelledby="active-session-name">
+            <div
+              className="athlete-session-photo"
+              aria-hidden="true"
+              style={{ backgroundImage: 'url("' + LOGIN_POSTER + '")' }}
+            />
+            <div className="athlete-session-content">
+              <p className="eyebrow">
+                {workout?.weekday && workout.weekday !== weekday
+                  ? 'Próximo dia programado · ' + workout.weekday
+                  : 'Seu treino do dia'}
+              </p>
+              <h2 id="active-session-name">
+                {workout?.title ?? 'Sua primeira ficha começa aqui.'}
+              </h2>
+              {workout ? (
+                <div className="athlete-prescription">
+                  <span>
+                    <Dumbbell size={16} aria-hidden />
+                    {workout.exercises.length} exercícios
+                  </span>
+                  <span>
+                    <Layers size={16} aria-hidden />
+                    {workout.exercises.reduce((sum, e) => sum + e.sets, 0)} séries
+                  </span>
+                </div>
+              ) : (
+                <p>
+                  Encontre um personal para receber sua ficha ou registre um treino por conta
+                  própria em Minha rotina.
+                </p>
+              )}
+              {workout ? (
+                <Button asChild className="athlete-start">
+                  <Link href={`/aluno/treinos/${workout.id}`}>
+                    {data.drafts[workout.id]?.some((s) => s.done)
+                      ? 'Continuar meu treino'
+                      : 'Começar meu treino'}
+                    <ArrowRight size={17} />
+                  </Link>
+                </Button>
+              ) : (
+                <Button asChild className="athlete-start">
+                  <Link href="/aluno/marketplace">
+                    Encontrar personal <ArrowRight size={17} />
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </section>
+          <nav className="athlete-shortcuts" aria-label="Atalhos do acompanhamento">
+            <Link href="/aluno/treinos">
+              <ClipboardList aria-hidden /> Meus treinos
+            </Link>
+            <Link href="/aluno/conversas">
+              <MessageCircle aria-hidden /> Conversas
+            </Link>
+            <Link href="/aluno/personal">
+              <UserRound aria-hidden /> Meu personal
+            </Link>
+          </nav>
         </div>
-        <div className="student-welcome-art" aria-hidden>
-          <Brand compact />
-        </div>
-      </section>
-      <div className="student-shortcuts">
-        <TextLink href="/aluno/alimentacao">Registrar alimentação</TextLink>
-        <TextLink href="/aluno/evolucao">Ver meu progresso</TextLink>
+        <HabitsPanel />
       </div>
       <div className="student-home-grid">
-        <Panel title="Seu percurso até aqui" description="Sessões disponíveis no histórico">
+        <Panel title="Atividade recente">
           <div className="student-metric-strip">
             <div>
               <span>Sessões registradas</span>
@@ -89,11 +147,11 @@ export function StudentHome() {
             </div>
           ))}
           <div className="panel-footer">
-            <span>Um registro de cada vez.</span>
+            <TextLink href="/aluno/evolucao">Ver evolução</TextLink>
             <TextLink href="/aluno/historico">Ver histórico</TextLink>
           </div>
         </Panel>
-        <Panel title="Próximo encontro" description="Um momento para acompanhar de perto">
+        <Panel title="Próximo encontro">
           <div className="panel-body">
             {today[0] ? (
               <>
@@ -103,8 +161,11 @@ export function StudentHome() {
                   {today[0].time} · {today[0].duration} min · {today[0].kind}
                 </p>
                 <p className="form-help mt-5">
-                  Com {data.profiles.personal.name}. Agendamento demonstrativo feito no espaço do
-                  personal.
+                  Com{' '}
+                  {today[0].trainerId
+                    ? (connectService.getAccount(today[0].trainerId)?.name ?? 'seu personal')
+                    : data.profiles.personal.name}
+                  . Agendamento demonstrativo feito no espaço do personal.
                 </p>
               </>
             ) : (
@@ -124,39 +185,7 @@ export function StudentHome() {
         </div>
         <WorkoutCards workouts={workouts.slice(0, 2)} studentView />
       </div>
-      <p className="form-help section-gap flex items-center gap-2">
-        <Sparkles size={15} aria-hidden />A evolução acontece no seu tempo. Acompanhe seu próprio
-        percurso.
-      </p>
     </>
   );
 }
-export function StudentWorkouts() {
-  const { studentId: activeStudentId } = useDemoSession();
-  const data = useDemo();
-  const assigned = data.workouts.filter((w) => w.studentId === activeStudentId);
-  const week = trainingWeek(assigned, studentSessions(data, activeStudentId), DEMO_DATE);
-  const previous = assigned.filter((w) => !week.active.includes(w));
-  return (
-    <>
-      <PageHeader
-        eyebrow={`Semana de ${formatDate(week.dates[0])} a ${formatDate(week.dates[6])}`}
-        title="Meus treinos"
-        description="Veja os treinos atribuídos pelo personal e escolha qual deseja registrar."
-      />
-      {week.next && (
-        <p className="training-next">
-          Próximo treino sugerido <strong>{week.next.title}</strong>
-          {week.next.weekday && ' · ' + week.next.weekday}
-        </p>
-      )}
-      <WorkoutCards workouts={week.active} studentView />
-      {previous.length > 0 && (
-        <details className="studio-tools">
-          <summary>Fichas de versões anteriores</summary>
-          <WorkoutCards workouts={previous} studentView />
-        </details>
-      )}
-    </>
-  );
-}
+export { StudentWorkouts } from './library';

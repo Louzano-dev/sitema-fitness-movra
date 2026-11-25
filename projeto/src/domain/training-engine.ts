@@ -1,21 +1,17 @@
 import {
   questionnaireSchema,
-  WEEKDAYS,
   type Questionnaire,
   type TrainingDay,
   type Program,
 } from './experience';
-import { dayFocus, estimateDay, selectDay, weekVolume, type PlanContext } from './training-plan';
+import { assessProgram, compatible, estimateDay, selectDay, type PlanContext } from './training-plan';
+import { modelFor, previewWeek, TRAINING_GROUPS, TRAINING_MODELS } from './training-models';
 import { EXERCISES } from './exercise-catalog';
 import { CARDIO_CATALOG, makeCardio } from './cardio';
 import { normalize } from './selectors';
-export const RULE_VERSION = 'movra-rules/2.0';
+export const RULE_VERSION = 'movra-rules/3.0';
 export function reviewReasons(input: Questionnaire): string[] {
   const reasons: string[] = [];
-  if (input.age >= 65)
-    reasons.push(
-      'Para esta faixa etária, o protótipo exige planejamento individual revisado, sem aplicar automaticamente o modelo adulto.',
-    );
   if (input.age < 18)
     reasons.push(
       'Menor de idade: usar planejamento supervisionado específico. Nenhum modelo adulto foi gerado.',
@@ -35,6 +31,18 @@ export function reviewReasons(input: Questionnaire): string[] {
     reasons.push(
       'Frequências de seis ou sete dias exigem organização individual de recuperação; sem geração automática.',
     );
+  const model = modelFor(input);
+  if (input.modelId && !TRAINING_MODELS.some((m) => m.id === input.modelId))
+    reasons.push('Modelo de treino desconhecido. Selecione uma divisão disponível.');
+  if (!model.frequencies.includes(input.frequency))
+    reasons.push(`${model.name} requer uma destas frequências semanais: ${model.frequencies.join(', ')} dias.`);
+  for (const day of input.days) {
+    const groups = input.dayGroups?.[day] ?? [];
+    if (groups.some((g) => !TRAINING_GROUPS.some((known) => known === g)))
+      reasons.push(day + ' · confira os grupos musculares selecionados.');
+    if (model.id === 'custom' && !groups.length && !input.dayFocus?.[day])
+      reasons.push(day + ' · escolha o foco ou os grupos da divisão personalizada.');
+  }
   return reasons;
 }
 export type Proposal =
@@ -67,23 +75,18 @@ export function generateProgram(
     reasons.push(
       'Selecione uma modalidade compatível com os equipamentos. Outras modalidades exigem organização manual.',
     );
-  if ((q.split === 'A/B/C' || q.split === 'Push/Pull/Legs') && q.frequency < 3)
-    reasons.push(
-      'Esta divisão precisa de pelo menos três dias para contemplar a semana. Escolha corpo inteiro ou aumente a disponibilidade.',
-    );
-  if (q.split === 'Personalizada' && q.days.some((d) => !q.dayFocus?.[d]))
-    reasons.push('Escolha o foco de cada dia da divisão personalizada.');
   if (reasons.length) return { kind: 'review', reasons };
   const days: TrainingDay[] = [];
-  for (const weekday of WEEKDAYS.filter((d) => q.days.includes(d))) {
+  const week = previewWeek(q);
+  for (const {weekday, focus} of week) {
     const index = days.length;
-    const focus = dayFocus(q, index, weekday);
     const day: TrainingDay = {
       id: `day-${index}`,
       name: `${String.fromCharCode(65 + index)} · ${focus}`,
       weekday,
       exercises: [],
       instructions: q.notes,
+      groups: q.dayGroups?.[weekday],
       cardio:
         cq?.include === 'Sim' && modality && index < cq.frequency
           ? [
@@ -97,30 +100,36 @@ export function generateProgram(
             ]
           : undefined,
     };
-    const { selected, minimum, covered } = selectDay(q, day, index, days, offset, context);
+    const { selected, minimum, covered, missing } = selectDay(q, day, index, days, offset, context);
     if (!covered || selected.length < minimum)
       return {
         kind: 'review',
         reasons: [
-          `${weekday} · ${focus}: cabem ${selected.length} exercícios compatíveis com os equipamentos, exclusões e tempo após o cardio. Ajuste a divisão, os equipamentos ou os minutos e gere novamente.`,
+          `${weekday} · ${focus}: cobertura insuficiente com o tempo e os equipamentos disponíveis (${selected.length} exercícios compatíveis${missing.length ? ', falta ' + missing.map((b) => b.join(' ou ')).join(', ') : ''}). Revise o foco, as exclusões ou o tempo após o cardio.`,
         ],
       };
     days.push({ ...day, exercises: selected });
   }
+  const assessment = assessProgram(days,q);
+  if (assessment.errors.length) return {kind:'review',reasons:assessment.errors};
   return {
     kind: 'proposal',
     program: {
-      id: '',
+      id: crypto.randomUUID(),
       title: `Proposta · ${q.goal}`,
       studentId: q.studentId,
-      questionnaire: q,
+      questionnaire: {
+        ...q, modelId: modelFor(q).id,
+        dayFocus: q.modelId || q.split === 'Personalizada' ? q.dayFocus : undefined,
+        dayGroups: q.modelId || q.split === 'Personalizada' ? q.dayGroups : undefined,
+      },
       ruleVersion: RULE_VERSION,
       status: 'Aguardando revisão',
       days,
       rationale: [
         `Modelo ${RULE_VERSION}; ${q.level.toLowerCase()} com experiência ${q.experience.toLowerCase()}.`,
         `${q.frequency} dias × ${q.minutes} min como limite de organização, sem promessa de duração exata.`,
-        `Divisão ${q.split}; equipamentos e exclusões respeitados. Cargas não inferidas.`,
+        `Modelo ${modelFor(q).name} v${modelFor(q).version}. Equipamentos e exclusões conferidos.`,
         `Idade ${q.age} registrada para triagem; não determina nível ou segurança.`,
         q.level === 'Iniciante'
           ? 'Priorize familiarização. Revise a execução antes de alterar as repetições.'
@@ -128,12 +137,12 @@ export function generateProgram(
             ? 'Acompanhe as repetições nas sessões seguintes. Revise o volume antes de progredir.'
             : 'Compare as sessões do bloco e revise esforço e recuperação antes de progredir. O personal pode registrar RIR ou RPE nos campos opcionais.',
         `Local: ${q.location}. Confira os apoios e os equipamentos específicos disponíveis.`,
-        `Volume direto estimado: ${Object.entries(weekVolume(days))
+        `Volume direto estimado: ${Object.entries(assessment.volume)
           .map(([m, n]) => m + ' ' + n + ' séries')
           .join(', ')}.`,
       ],
       revision: 1,
-      updatedAt: '',
+      updatedAt: new Date().toISOString(),
       template: false,
       supervised: false,
     },
@@ -158,12 +167,10 @@ export function regenerateDays(
     }
     const locked = day.exercises.filter((e) => e.locked);
     for (const row of locked) {
-      const exercise = EXERCISES.find((e) => e.id === row.exerciseId);
+      const exercise = (context.catalog ?? EXERCISES).find((e) => e.id === row.exerciseId);
       if (
         q.excluded.includes(row.exerciseId) ||
-        (exercise &&
-          (q.avoidPatterns.includes(exercise.pattern) ||
-            !exercise.requires.every((part) => q.equipment.some((item) => item === part))))
+        (exercise && !compatible(exercise,q))
       ) {
         throw Error(
           day.weekday +

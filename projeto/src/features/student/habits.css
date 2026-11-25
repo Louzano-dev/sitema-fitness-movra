@@ -1,0 +1,523 @@
+.habits-panel {
+  --habit-ink: #172c29;
+  --habit-lime: #c9f078;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--habit-ink);
+  background: #fafaf3;
+  border: 1px solid #dce0d4;
+  border-radius: 18px;
+}
+.habits-panel[data-settings='true'] {
+  margin-block: 1.25rem;
+}
+.habit-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 34%);
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  padding: 16px 18px;
+  color: #f3f3e9;
+  background: #172c29;
+  isolation: isolate;
+}
+.habit-banner-copy {
+  position: relative;
+  z-index: 1;
+}
+.habit-label,
+.habit-reward-title,
+.habit-body h2,
+.habit-unlock,
+.habit-latest {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+.habit-label {
+  color: #dcf2ac;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+.habit-fire {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  color: #c9f078;
+  flex: none;
+}
+.habit-fire svg {
+  position: relative;
+  z-index: 1;
+  transform-origin: center 86%;
+}
+.habit-fire::before,
+.habit-banner[data-evolving='true'] .habit-companion::before {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #c9f07870, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+}
+.habit-fire i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffd282;
+  opacity: 0;
+  --drift: -13px;
+}
+.habit-fire i:nth-last-child(2) {
+  --drift: 3px;
+}
+.habit-fire i:last-child {
+  --drift: 14px;
+}
+.habit-banner h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-block: 0.45rem 0.4rem;
+  line-height: 1.12;
+}
+.habit-banner h2 strong {
+  font-size: clamp(2.65rem, 4.6vw, 3.9rem);
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+}
+.habit-banner h2 span {
+  max-width: 23ch;
+  font-size: 0.81rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.habit-stage-label {
+  color: #d9e0cf;
+  font-size: 0.78rem;
+  font-weight: 550;
+}
+.habit-stage-label span {
+  padding-inline: 0.15rem;
+  color: #b0d27b;
+}
+.habit-companion {
+  position: relative;
+  width: 100%;
+  height: clamp(100px, 12vw, 145px);
+  justify-self: end;
+  align-self: center;
+}
+.habit-current-stage,
+.habit-previous-stage {
+  position: absolute;
+  inset: 0;
+}
+.habit-banner:not([data-evolving='true']) .habit-current-stage .companion-figure {
+  position: absolute;
+  inset-block-start: -8%;
+  inset-inline-start: -45%;
+  width: 190%;
+  height: 185%;
+}
+.habit-banner:not([data-evolving='true']) .habit-current-stage img {
+  object-position: center top;
+}
+.habit-fire::before {
+  background: radial-gradient(ellipse, #ffad577d, transparent 72%);
+}
+.habit-previous-stage {
+  opacity: 0;
+}
+.habit-evolved {
+  color: #daf8a7;
+  font-size: 0.77rem;
+  font-weight: 650;
+  margin-top: 0.2rem;
+}
+.habit-body {
+  display: grid;
+  gap: 0.55rem;
+  padding: 14px 16px 10px;
+}
+.habit-week-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+}
+.habit-week-heading > span {
+  font-size: 0.74rem;
+  font-weight: 550;
+  color: #42564b;
+}
+.habit-body h2,
+.habit-editor legend {
+  font-size: 1rem;
+  font-weight: 650;
+}
+.habit-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.18rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.habit-calendar li {
+  display: grid;
+  gap: 0.3rem;
+  text-align: center;
+  justify-items: center;
+  padding-block: 0.25rem;
+  color: #516259;
+}
+.habit-calendar li span {
+  font-size: 0.67rem;
+}
+.habit-calendar li strong {
+  display: grid;
+  place-items: center;
+  width: min(100%, 1.9rem);
+  aspect-ratio: 1;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: #edefe6;
+  color: #526158;
+  line-height: 1;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.habit-calendar li[data-planned='true'] strong {
+  border-color: #81987b;
+  background: #fafaf3;
+}
+.habit-calendar li[data-done='true'] strong {
+  background: #c9f078;
+  color: #172c29;
+  border-color: #9dbf72;
+}
+.habit-calendar li[aria-current='date'] strong {
+  outline: 1.5px solid #354b40;
+  outline-offset: 2px;
+}
+.habit-calendar-note,
+.habit-latest,
+.habit-detail-content,
+.habit-stage-label {
+  line-height: 1.4;
+}
+.habit-calendar-note,
+.habit-latest {
+  color: #46594d;
+  font-size: 0.77rem;
+}
+.habit-latest svg,
+.habit-unlock svg,
+.habit-body h2 svg {
+  flex: none;
+}
+.habit-tools {
+  min-width: 0;
+  border-top: 1px solid #dbe0d2;
+}
+.habit-tools summary {
+  cursor: pointer;
+  padding: 0.45rem 0;
+  font-size: 0.81rem;
+  font-weight: 600;
+}
+.habit-tools summary::marker {
+  color: #536b59;
+}
+.habit-tools summary:focus-visible,
+.habit-stages button:focus-visible {
+  outline: 2px solid #39693f;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.habit-detail-content {
+  display: grid;
+  gap: 0.55rem;
+  padding-block: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+}
+.habit-detail-content h3 {
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+.habit-detail-content progress {
+  width: 100%;
+  height: 0.45rem;
+  accent-color: #365f43;
+}
+.habit-stages,
+.habit-awards {
+  display: grid;
+  list-style: none;
+  gap: 0.25rem;
+  padding: 0;
+  margin: 0;
+}
+.habit-stages li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.habit-stages li > span,
+.habit-stages button,
+.habit-awards li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.habit-stages button {
+  min-height: 28px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.habit-stages small,
+.habit-stages li > span {
+  color: #536359;
+}
+.habit-pose-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  background: #edf3e3;
+  border-radius: 0.6rem;
+  padding: 0.35rem 0.65rem;
+}
+.habit-pose-preview > div {
+  width: 58px;
+  height: 70px;
+}
+.habit-pose-preview figcaption {
+  font-size: 0.77rem;
+  font-weight: 550;
+}
+.habit-celebration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-block: 0.45rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  color: #f3f3e9;
+  background: #172c29;
+  border-radius: 0.9rem;
+}
+.habit-reward-figure {
+  width: clamp(48px, 12vw, 85px);
+  height: 88px;
+  flex: none;
+}
+.habit-reward-title {
+  font-size: 1rem;
+}
+.habit-celebration p,
+.completion .habit-celebration p {
+  color: #e0e7d6;
+  font-size: 0.83rem;
+  line-height: 1.45;
+  margin: 0.18rem 0;
+}
+.habit-unlock {
+  color: #d2f58e;
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .habit-fire svg {
+    animation: habit-ignite 1.1s ease-in-out both;
+  }
+  .habit-fire::before {
+    animation: habit-glow 1.1s ease-in-out both;
+  }
+  .habit-fire[data-burst='true'] svg {
+    animation: habit-flare 1.4s ease-in-out both;
+  }
+  .habit-fire i {
+    animation: habit-ember 0.85s 0.25s ease-out both;
+  }
+  .habit-banner[data-evolving='true'] .habit-companion::before {
+    animation: habit-glow 1.45s ease-out both;
+  }
+  .habit-banner[data-evolving='true'] .habit-current-stage {
+    animation: habit-arrive 1.25s ease-out both;
+  }
+  .habit-previous-stage {
+    animation: habit-anticipate 0.7s ease-in both;
+  }
+  .habit-unlock {
+    animation: habit-award 0.5s 0.35s ease-out both;
+  }
+  [data-onscreen='false'] *,
+  [data-onscreen='false'] *::before {
+    animation-play-state: paused !important;
+  }
+}
+@keyframes habit-ignite {
+  0% {
+    transform: scale(0.84);
+    opacity: 0.74;
+  }
+  40% {
+    transform: scale(1.18) rotate(-4deg);
+    opacity: 1;
+  }
+  68% {
+    transform: scale(1.04) rotate(3deg);
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes habit-flare {
+  0%,
+  100% {
+    transform: none;
+  }
+  16% {
+    transform: scale(0.9, 0.85);
+  }
+  40% {
+    transform: scale(1.34, 1.45) rotate(-7deg);
+  }
+  70% {
+    transform: scale(1.08) rotate(4deg);
+  }
+}
+@keyframes habit-glow {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+@keyframes habit-ember {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  30% {
+    opacity: 0.96;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift), -27px) scale(0.45);
+  }
+}
+@keyframes habit-anticipate {
+  0% {
+    opacity: 1;
+    transform: none;
+  }
+  47% {
+    opacity: 1;
+    transform: translateY(3%) scale(0.94);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-5%) scale(1.08);
+  }
+}
+@keyframes habit-arrive {
+  0%,
+  42% {
+    opacity: 0;
+    transform: translateY(5%) scale(0.88);
+  }
+  69% {
+    opacity: 1;
+    transform: translateY(-2%) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes habit-award {
+  from {
+    opacity: 0.2;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.habit-editor,
+.habit-form {
+  display: grid;
+  gap: 0.7rem;
+  margin-block: 0.5rem;
+}
+.habit-weekdays {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+.habit-weekdays label {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  cursor: pointer;
+}
+.habit-weekdays label:has(:checked) {
+  background: #c9f078;
+  color: #172c29;
+}
+.habit-weekdays input {
+  accent-color: #284f43;
+}
+.habit-form {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: end;
+  padding-block: 0.55rem;
+}
+:root[data-movra-theme='dark'] .habits-panel :is(.habit-week-heading > span, .habit-calendar li, .habit-calendar-note, .habit-latest, .habit-stages small, .habit-stages li > span) {
+  color: #c6d4c6;
+}
+:root[data-movra-theme='dark'] .habits-panel .habit-calendar li:not([data-done='true']) strong {
+  color: #e6eddd;
+  background-color: #293e35;
+}
+:root[data-movra-theme='dark'] .habits-panel .habit-calendar li[aria-current='date'] strong {
+  outline-color: #c9f078;
+}
+:root[data-movra-theme='dark'] .habits-panel .habit-tools {
+  border-color: #3c5147;
+}
+:root[data-movra-theme='dark'] .habits-panel .habit-tools summary::marker {
+  color: #b9cabb;
+}
+:root[data-movra-theme='dark'] .habits-panel .habit-pose-preview {
+  color: #e8eedf;
+  background: #2b4235;
+}
+:root[data-movra-theme='dark'] .habits-panel :focus-visible {
+  outline-color: #c9f078;
+}
